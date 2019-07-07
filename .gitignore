@@ -120,7 +120,6 @@ build/script.py
 output/*
 folds.csv
 *.pt
-*.json
 *.sh
 events*
 

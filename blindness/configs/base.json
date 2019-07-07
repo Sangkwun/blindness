@@ -1,0 +1,22 @@
+{
+    "name": "base_test",
+    "input": {
+        "width": 288,
+        "height": 288,
+        "transforms": [
+            "random_resized_crop"
+        ],
+        "test_transforms": [
+            "random_resized_crop"
+        ]
+    },
+    "dataset": {
+        "fold": 0,
+        "num_class": 5,
+        "batch_size": 2,
+        "num_workers": 2
+    },
+    "model": {
+        "name": "resnet50"
+    }
+}
