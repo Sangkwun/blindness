@@ -1,5 +1,8 @@
 import torch
 import pandas as pd
+from glob import glob
+from PIL import Image
+import cv2
 
 from torch.utils.data import Dataset, DataLoader
 from .configs import dataset_map
@@ -10,28 +13,33 @@ class BlindDataset(Dataset):
     root: dataset root dir
     df: label을 포함한 dataframe
     num_class : label의 갯수
+    output : label의 형태로 classification일 경우 one-hot 형태, regression일 경우 0, 1, 2, 3, 4 형태
     """
-    def __init__(self, image_dir, df, transforms, num_class):
+    def __init__(self, image_dir, df, transforms, method, num_class):
         super().__init__()
         self.image_dir = image_dir
         self.df = df
         self.transforms = transforms
+        self.method = method
+        self.num_class = num_class
 
     def __len__(self):
         return len(self.df)
 
     def get_img(self, index):
-        raise NotImplementedError
-        return None
+        img_name = self.df.iloc[index]['id_code']
+        image = cv2.imread(self.image_dir + '/' + img_name + '.png')
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(image)
+        
+        return image
 
     def __getitem__(self, index):
         item = self.df.iloc[index]
         image = self.get_img(index)
         if self.transforms is not None:
-            image = transforms(image)
-
-        target = torch.zeros(self.num_class)
-        target[item['diagnosis']] = 1
+            image = self.transforms(image)
+        target = item['diagnosis']
         return image, target
 
 
@@ -43,13 +51,14 @@ def build_dataset(cfg, transforms,  split='train'):
     fold = dataset_config['fold']
     batch_size = dataset_config['batch_size']
     num_workers = dataset_config['num_workers']
+    method = dataset_config['method']
 
     if split == 'test':
         df = pd.read_csv(dataset_map['test'])
-        image_dir = dataset_map['train_images']
+        image_dir = dataset_map['test_images']
     else:
         df = pd.read_csv(dataset_map['fold'])
-        image_dir = dataset_map['test_images']
+        image_dir = dataset_map['train_images']
     
     if split == 'train':
         df = df[df['fold'] != fold]
@@ -60,13 +69,14 @@ def build_dataset(cfg, transforms,  split='train'):
         image_dir,
         df,
         transforms,
-        num_class
+        num_class,
+        method
     )
     data_loader = DataLoader(
         BlindDataset(*args),
         shuffle=True,
         batch_size=batch_size,
-        num_workers=num_workers,
+        num_workers=num_workers
     )
     # TODO: dataloader로 만들기. concat하기.
     return data_loader
