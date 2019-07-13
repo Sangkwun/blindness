@@ -14,9 +14,14 @@
         "fold": 0,
         "num_class": 5,
         "batch_size": 2,
-        "num_workers": 2
+        "num_workers": 2,
+        "method":"classification"
     },
     "model": {
         "name": "resnet50"
+    },
+    "train_param": {
+        "epoch": 20,
+        "lr": 0.001
     }
 }
