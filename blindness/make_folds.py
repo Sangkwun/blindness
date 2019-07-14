@@ -8,13 +8,13 @@ from collections import defaultdict, Counter
 from .configs import dataset_map
 
 
-def make_folds(n_folds) -> pd.DataFrame:
+def make_folds(n_folds):
     df = pd.read_csv(dataset_map['train'], engine='python')
 
     cls_counts = Counter([classes for classes in df['diagnosis']])
     fold_cls_counts = defaultdict()
     for class_index in cls_counts.keys():
-        fold_cls_counts[class_index] = np.zeros(4, dtype=np.int)
+        fold_cls_counts[class_index] = np.zeros(n_folds, dtype=np.int)
 
     df['fold'] = -1
     pbar = tqdm.tqdm(total=len(df))
