@@ -15,7 +15,8 @@
         "num_class": 5,
         "batch_size": 2,
         "num_workers": 2,
-        "method":"classification"
+        "method":"classification",
+        "use_diabetic_retinopathy": true
     },
     "model": {
         "name": "resnet50"

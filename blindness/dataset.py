@@ -4,8 +4,9 @@ from glob import glob
 from PIL import Image
 import cv2
 
-from torch.utils.data import Dataset, DataLoader
-from .configs import dataset_map
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
+from .configs import dataset_map, diabetic_retinopathy_map
+
 
 class BlindDataset(Dataset):
     """
@@ -15,12 +16,11 @@ class BlindDataset(Dataset):
     num_class : label의 갯수
     output : label의 형태로 classification일 경우 one-hot 형태, regression일 경우 0, 1, 2, 3, 4 형태
     """
-    def __init__(self, image_dir, df, transforms, method, num_class):
+    def __init__(self, image_dir, df, transforms, num_class):
         super().__init__()
         self.image_dir = image_dir
         self.df = df
         self.transforms = transforms
-        self.method = method
         self.num_class = num_class
 
     def __len__(self):
@@ -69,14 +69,22 @@ def build_dataset(cfg, transforms,  split='train'):
         image_dir,
         df,
         transforms,
-        num_class,
-        method
+        num_class
     )
+    dataset = BlindDataset(*args)
+    if split == 'train' and dataset_config['use_diabetic_retinopathy']:
+        diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'])
+        diabetic_dataset = BlindDataset(
+            image_dir=diabetic_retinopathy_map['train_images'],
+            df=diabetic_df,
+            transforms=transforms,
+            num_class=num_class
+        )
+        dataset = ConcatDataset([dataset, diabetic_dataset])
     data_loader = DataLoader(
-        BlindDataset(*args),
+        dataset,
         shuffle=True,
         batch_size=batch_size,
         num_workers=num_workers
     )
-    # TODO: dataloader로 만들기. concat하기.
     return data_loader
