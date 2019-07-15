@@ -1,33 +1,34 @@
 import json
-import argparse
 import time
+import torch
+import argparse
 
 import pandas as pd
 import numpy as np
-import torch
+
+from pathlib import Path
+from shutil import copyfile
+from torch import optim, nn
 from tqdm import tqdm, trange
-from torch import optim
-from torch import nn
 from sklearn.metrics import cohen_kappa_score
 
 from .configs import dataset_map
 from .models import build_model
 from .transforms import build_transforms
 from .dataset import build_dataset
+from .utils import load_checkpoint, save_checkpoint, ON_KAGGLE
+
+if not ON_KAGGLE:
+    from torch.utils.tensorboard import SummaryWriter
 
 def arg_parser():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
     arg('mode', choices=['train', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
-
-    # for run
-    arg('--run_name', default='stage1', type=str)
     arg('--model_configs', nargs='+')
-
     # for split_fold
     arg('--n_fold', type=int, default= 5)
-
     args = parser.parse_args()
     return args
 
@@ -45,7 +46,6 @@ def main():
     else:
         raise NotImplementedError
 
-
 def train(cfg):
     device = torch.device("cuda:0")
 
@@ -54,22 +54,35 @@ def train(cfg):
 
     train_data = build_dataset(cfg, train_transform, split='train')
     valid_data = build_dataset(cfg, valid_transform, split='valid')
+    
     model = build_model(cfg, device)
+
     since = time.time()
-    
-    # cfg에 따라서 optimizer를 바꿔 적용
-    optimizer = optim.Adam(model.parameters(), lr=cfg['train_param']['lr'])
-    
-    loss_list = []
+    lr = cfg['train_param']['lr']
     num_epochs = cfg['train_param']['epoch']
-    # -----train------
-    for epoch in range(num_epochs):
+    output_dir = Path('output', cfg['name'])
+    output_dir.mkdir(exist_ok=True, parents=True)
+    model_path = output_dir / 'model.pt'
+    best_model_path = output_dir / 'best_model.pt'
+    start_epoch = 0
+    best_valid_score = 0
+    best_valid_loss = float('inf')
+    loss_list = []
+    
+    if not ON_KAGGLE:
+        writer = SummaryWriter(log_dir=output_dir / 'tensorboard')
+
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    if model_path.exists(): # modelpath가 있을 경우 load
+        start_epoch, best_valid_score, best_valid_loss, lr = load_checkpoint(model, model_path)
+        start_epoch += 1
+
+    for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
 
         model.train()
         running_loss = 0.0
-        counter = 0
 
         for image, target in tqdm(train_data):            
             loss = model(image, target)
@@ -79,19 +92,34 @@ def train(cfg):
             optimizer.zero_grad()
 
             running_loss += loss.item() * image.size(0)
-            counter += 1
+
+
         epoch_loss = running_loss / len(train_data)
         loss_list.append(epoch_loss)
         print('Train Loss: {:.4f}'.format(epoch_loss))
-
     
-        validate(model, valid_data)
-
+        valid_loss, valid_score = validate(model, valid_data, cfg) # Validation
+        save_checkpoint(model, model_path, epoch, best_valid_score, best_valid_loss, lr) # Save checkpoint
+        # Update best model, loss, score
+        if valid_loss < best_valid_loss: best_valid_loss = valid_loss
+        if valid_score > best_valid_score: 
+            best_valid_score = valid_score
+            copyfile(model_path, best_model_path)
+            
+        # write in tensorboard
+        if not ON_KAGGLE:
+            writer.add_scalar('loss', running_loss, global_step=epoch)
+            writer.add_scalar('lr', lr, global_step=epoch)
+            writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
+            writer.add_scalar('valid_score', valid_score, global_step=epoch)
+            writer.add_scalar('best_valid_score', best_valid_score, global_step=epoch)
+            writer.add_scalar('best_valid_loss', best_valid_loss, global_step=epoch)
+        
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     return None
 
-def validate(model, valid_data):
+def validate(model, valid_data, cfg):
     model.eval()
     all_losses, all_predictions, all_targets = [], [], []
 

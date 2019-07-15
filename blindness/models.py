@@ -14,6 +14,7 @@ class Model(nn.Module):
 
         self.device = device
         self.mode = cfg['dataset']['method']
+        weights_path = cfg['model']['weight_path']
 
         if self.mode == 'classification':
             out_feature=cfg['dataset']['num_class']
@@ -25,10 +26,14 @@ class Model(nn.Module):
             raise ValueError
 
         args = (
-            True,
+            cfg['model']['pretrained'],
             cfg['dataset']['num_class']
         )
         self.backbone = model_map[cfg['model']['name']](*args)
+        
+        if weights_path is not None:
+            self.backbone.load_state_dict(torch.load(weights_path))
+
         self.backbone.fc = nn.Sequential(
             nn.Linear(in_features=2048, out_features=2048, bias=True),
             nn.ReLU(),

@@ -1,5 +1,5 @@
 {
-    "name": "base_test",
+    "name": "with_diabetic",
     "input": {
         "width": 288,
         "height": 288,
@@ -14,9 +14,9 @@
         "fold": 0,
         "num_class": 5,
         "batch_size": 32,
-        "num_workers": 4,
+        "num_workers": 8,
         "method":"classification",
-        "use_diabetic_retinopathy": false
+        "use_diabetic_retinopathy": true
     },
     "model": {
         "name": "resnet50",
