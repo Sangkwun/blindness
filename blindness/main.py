@@ -75,6 +75,9 @@ def train(cfg):
     best_valid_score = 0
     best_valid_loss = float('inf')
     loss_list = []
+
+    with open(output_dir / 'config.json', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(cfg, ensure_ascii=False, indent=4))
     
     if not ON_KAGGLE:
         writer = SummaryWriter(log_dir=output_dir / 'tensorboard')
@@ -165,13 +168,15 @@ def validate(model, valid_data, cfg):
     return valid_loss, valid_score
 
 def predict(cfg, model_path):
+    cfg['model']['pretrained'] = False
     device = torch.device("cuda:0")
 
     test_transform  = build_transforms(cfg, split='test')
     test_data = build_dataset(cfg, test_transform, split='test')
-
+    
     model = build_model(cfg, device)
     output_dir = Path('output', cfg['name'])
+    output_dir.mkdir(exist_ok=True, parents=True)
     best_model_path = output_dir / 'best_model.pt'
     pred_path = output_dir / 'prediction.pt'
     num_class = cfg['dataset']['num_class']
