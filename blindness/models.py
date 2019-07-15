@@ -1,50 +1,63 @@
-from torch import nn
+
 import torch
+from torch import nn
 import torchvision.models as models
 
-class ResNet(nn.Module):
-    def __init__(self, cfg):
-        self.model = models.resnet50(
-            pretrained=False,
-            num_classes=cfg['dataset']['num_class']
+
+model_map = {
+    "resnet50": models.resnet50
+}
+
+class Model(nn.Module):
+    def __init__(self, cfg, device):
+        super(Model, self).__init__()
+
+        self.device = device
+        self.mode = cfg['dataset']['method']
+
+        if self.mode == 'classification':
+            out_feature=cfg['dataset']['num_class']
+            self.criterion = nn.CrossEntropyLoss()
+        elif self.mode == 'regression':
+            out_feature=1
+            self.criterion = nn.MSELoss()
+        else: 
+            raise ValueError
+
+        args = (
+            True,
+            cfg['dataset']['num_class']
         )
-        cfg
-    
-    def forward(self, input, target):
-        output = self.model(input)
-        loss = None
-        label = None
+        self.backbone = model_map[cfg['model']['name']](*args)
+        self.backbone.fc = nn.Sequential(
+            nn.Linear(in_features=2048, out_features=2048, bias=True),
+            nn.ReLU(),
+            nn.Linear(in_features=2048, out_features=out_feature, bias=True),
+        )
+
+    def loss(self, pred, label):
+        if self.mode == 'regression':
+            label = label.float()
+        loss = self.criterion(pred, label)
+        return loss
+
+    def forward(self, input_img, target, validate=False):
+        input_img = input_img.to(self.device)
+        target = target.to(self.device)
+        pred = self.backbone(input_img)
+
+        if self.training or validate: # training time return loss
+            loss = self.loss(pred, target)
+
         if self.training:
             return loss
-        return label
+        elif validate:
+            return pred, loss
+        else:
+            return pred
 
 
 def build_model(cfg, device):
-    if cfg['model']['name'] == 'resnet50':
-        if cfg['dataset']['method'] == 'classification':
-            out_feature=cfg['dataset']['num_class']
-        elif cfg['dataset']['method'] == 'regression':
-            out_feature=1
-
-        model = models.resnet101(pretrained=False)
-        model.load_state_dict(torch.load(cfg['model']['model_path']))
-
-        model.avgpool = nn.AdaptiveAvgPool2d(1)
-        model.fc = nn.Sequential(
-                                nn.BatchNorm1d(2048, track_running_stats=True),
-                                nn.Dropout(p=0.25),
-                                nn.Linear(in_features=2048, out_features=2048, bias=True),
-                                nn.ReLU(),
-                                nn.BatchNorm1d(2048, track_running_stats=True),
-                                nn.Dropout(p=0.5),
-                                nn.Linear(in_features=2048, out_features=out_feature, bias=True),
-                                )
-
-        model = model.to(device)
-
-        # model = models.resnet50(
-        #     pretrained=False,
-        #     num_classes=cfg['dataset']['num_class']
-        # )
-    
+    model = Model(cfg, device)
+    model.to(device)
     return model

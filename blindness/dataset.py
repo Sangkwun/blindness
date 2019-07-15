@@ -27,8 +27,13 @@ class BlindDataset(Dataset):
         return len(self.df)
 
     def get_img(self, index):
-        img_name = self.df.iloc[index]['id_code']
-        image = cv2.imread(self.image_dir + '/' + img_name + '.png')
+        if 'id_code' not in self.df.keys():
+            img_name = self.df.iloc[index]['image']
+            img_path = self.image_dir + '/' + img_name + '.jpeg'
+        else:
+            img_name = self.df.iloc[index]['id_code']
+            img_path = self.image_dir + '/' + img_name + '.png'
+        image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
         
@@ -39,7 +44,10 @@ class BlindDataset(Dataset):
         image = self.get_img(index)
         if self.transforms is not None:
             image = self.transforms(image)
-        target = item['diagnosis']
+        if 'diagnosis' not in self.df.keys():
+            target = torch.tensor(item['level'])
+        else:
+            target = torch.tensor(item['diagnosis'])
         return image, target
 
 
@@ -73,13 +81,15 @@ def build_dataset(cfg, transforms,  split='train'):
     )
     dataset = BlindDataset(*args)
     if split == 'train' and dataset_config['use_diabetic_retinopathy']:
-        diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'])
+        diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'], index_col='Unnamed: 0')
+        del diabetic_df['Unnamed: 0.1']
         diabetic_dataset = BlindDataset(
             image_dir=diabetic_retinopathy_map['train_images'],
             df=diabetic_df,
             transforms=transforms,
             num_class=num_class
         )
+
         dataset = ConcatDataset([dataset, diabetic_dataset])
     data_loader = DataLoader(
         dataset,
