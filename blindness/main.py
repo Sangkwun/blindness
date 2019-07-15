@@ -28,6 +28,7 @@ def arg_parser():
     arg = parser.add_argument
     arg('mode', choices=['train', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
+    arg('--model_path', type=str)
     arg('--predictions', nargs='+')
     arg('--output_path', type=str, default='submission.csv')
     # for split_fold
@@ -43,7 +44,7 @@ def main():
     if args.mode == 'train':
         train(cfg)
     elif args.mode == 'predict':
-        predict(cfg)
+        predict(cfg, args.model_path)
     elif args.mode == 'submit':
         submit(args.predictions, args.output_path)
     else:
@@ -163,7 +164,7 @@ def validate(model, valid_data, cfg):
 
     return valid_loss, valid_score
 
-def predict(cfg):
+def predict(cfg, model_path):
     device = torch.device("cuda:0")
 
     test_transform  = build_transforms(cfg, split='test')
@@ -175,8 +176,11 @@ def predict(cfg):
     pred_path = output_dir / 'prediction.pt'
     num_class = cfg['dataset']['num_class']
 
-    if best_model_path.exists(): # best modelpath가 있을 경우 load
+    if model_path is not None:
+        load_checkpoint(model, model_path, False)
+    elif best_model_path.exists(): # best modelpath가 있을 경우 load
         load_checkpoint(model, best_model_path, False)
+    
 
     model.eval()
     all_outputs, all_ids = [], []

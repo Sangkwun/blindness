@@ -10,6 +10,7 @@ def load_checkpoint(model, path, return_others=True):
     best_valid_score = data['best_valid_score']
     best_valid_loss = data['best_valid_loss']
     lr = data['lr']
+    print("Load model from {}".format(path))
     return epoch, best_valid_score, best_valid_loss, lr
 
 def save_checkpoint(model, path, epoch, best_valid_score, best_valid_loss, lr):

@@ -16,12 +16,12 @@
         "batch_size": 32,
         "num_workers": 4,
         "method":"classification",
-        "use_diabetic_retinopathy": false
+        "use_diabetic_retinopathy": true
     },
     "model": {
         "name": "resnet50",
-        "pretrained": true,
-        "weight_path": null
+        "pretrained": false,
+        "weight_path": "../input/resnet50/resnet50.pth"
     },
     "train_param": {
         "epoch": 20,
