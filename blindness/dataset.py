@@ -43,10 +43,10 @@ class BlindDataset(Dataset):
     def __getitem__(self, index):
         item = self.df.iloc[index]
         image = self.get_img(index)
-        target = None
+
         if self.transforms is not None:
             image = self.transforms(image)
-        if 'diagnosis' not in self.df.keys():
+        if 'id_code' not in self.df.keys():
             if not self.is_test:
                 target = torch.tensor(item['level'])
             ids = item['image']
@@ -54,6 +54,8 @@ class BlindDataset(Dataset):
             if not self.is_test:
                 target = torch.tensor(item['diagnosis'])
             ids = item['id_code']
+        if self.is_test:
+            return image, ids
         return image, target, ids
 
 

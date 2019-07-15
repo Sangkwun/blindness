@@ -17,6 +17,8 @@ from .models import build_model
 from .transforms import build_transforms
 from .dataset import build_dataset
 from .utils import load_checkpoint, save_checkpoint, ON_KAGGLE
+from .optimizer import build_optimizer, build_scheduler
+
 
 if not ON_KAGGLE:
     from torch.utils.tensorboard import SummaryWriter
@@ -26,7 +28,8 @@ def arg_parser():
     arg = parser.add_argument
     arg('mode', choices=['train', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
-    arg('--submit_configs', nargs='+')
+    arg('--predictions', nargs='+')
+    arg('--output_path', type=str, default='submission.csv')
     # for split_fold
     arg('--n_fold', type=int, default= 5)
     args = parser.parse_args()
@@ -42,7 +45,7 @@ def main():
     elif args.mode == 'predict':
         predict(cfg)
     elif args.mode == 'submit':
-        raise NotImplementedError
+        submit(args.predictions, args.output_path)
     else:
         raise NotImplementedError
 
@@ -60,6 +63,9 @@ def train(cfg):
     since = time.time()
     lr = cfg['train_param']['lr']
     num_epochs = cfg['train_param']['epoch']
+    grad_clip_step = cfg['train_param']['grad_clip_step']
+    grad_clip = cfg['train_param']['grad_clip']
+
     output_dir = Path('output', cfg['name'])
     output_dir.mkdir(exist_ok=True, parents=True)
     model_path = output_dir / 'model.pt'
@@ -72,10 +78,14 @@ def train(cfg):
     if not ON_KAGGLE:
         writer = SummaryWriter(log_dir=output_dir / 'tensorboard')
 
-    optimizer = optim.Adam(model.parameters(), lr=lr)
     if model_path.exists(): # modelpath가 있을 경우 load
         start_epoch, best_valid_score, best_valid_loss, lr = load_checkpoint(model, model_path)
         start_epoch += 1
+
+    optimizer = build_optimizer(cfg, model, lr)
+    scheduler = build_scheduler(cfg, optimizer)
+
+    step = 0
 
     for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -88,8 +98,12 @@ def train(cfg):
             loss = model(image, target)
             batch_size = image.size(0)
             (batch_size * loss).backward()
+            if step > grad_clip_step:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
             optimizer.step()
             optimizer.zero_grad()
+
+            step += 1
 
             running_loss += loss.item() * image.size(0)
 
@@ -104,16 +118,19 @@ def train(cfg):
         if valid_loss < best_valid_loss: best_valid_loss = valid_loss
         if valid_score > best_valid_score: 
             best_valid_score = valid_score
-            copyfile(model_path, best_model_path)
+            copyfile(model_path, best_model_path) # copy modelfile to best model
 
-        # write in tensorboard
+        # write to tensorboard
         if not ON_KAGGLE:
+            if scheduler is not None: lr = scheduler.get_lr()[-1]
             writer.add_scalar('loss', running_loss, global_step=epoch)
             writer.add_scalar('lr', lr, global_step=epoch)
             writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
             writer.add_scalar('valid_score', valid_score, global_step=epoch)
             writer.add_scalar('best_valid_score', best_valid_score, global_step=epoch)
             writer.add_scalar('best_valid_loss', best_valid_loss, global_step=epoch)
+        if scheduler is not None:
+            scheduler.step()
         
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
@@ -155,27 +172,47 @@ def predict(cfg):
     model = build_model(cfg, device)
     output_dir = Path('output', cfg['name'])
     best_model_path = output_dir / 'best_model.pt'
+    pred_path = output_dir / 'prediction.pt'
+    num_class = cfg['dataset']['num_class']
 
     if best_model_path.exists(): # best modelpath가 있을 경우 load
         load_checkpoint(model, best_model_path, False)
 
     model.eval()
-
+    all_outputs, all_ids = [], []
     with torch.no_grad():
-        for image, target, ids in tqdm(test_data, desc='Predict'):
-            outputs = model(inputs)
+        for image, ids in tqdm(test_data, desc='Predict'):
+            outputs = model(image)
             all_outputs.append(outputs.data.cpu().numpy())
             all_ids.extend(ids)
     df = pd.DataFrame(
         data=np.concatenate(all_outputs),
         index=all_ids,
-        columns=map(str, range(N_CLASSES)))
-    df = mean_df(df)
-    df.to_hdf(out_path, 'prob', index_label='id')
-    print('Saved predictions to {}'.format(out_path))
-    
+        columns=map(str, range(num_class)))
+    df = df.groupby(level=0).mean()
+    df.to_hdf(pred_path, 'prob', index_label='id_code')
+    print('Saved predictions to {}'.format(pred_path))
 
-    return None
+def submit(predictions, output):
+    sample_submission = pd.read_csv(
+        dataset_map['submission'],
+        index_col='id_code'
+    )
+    dfs = []
+    for prediction in predictions:
+        df = pd.read_hdf(prediction, index_col='id_code')
+        df = df.reindex(sample_submission.index)
+        dfs.append(df)
+    df = pd.concat(dfs)
+    df = df.groupby(level=0).mean()
+    df = df.apply(get_classes, axis=1)
+    df.name = 'diagnosis'
+    df.to_csv(output, header=True)
+
+
+def get_classes(item):
+    return item.idxmax()
+
 
 if __name__ == '__main__':
     main()

@@ -49,9 +49,10 @@ class Model(nn.Module):
         loss = self.criterion(pred, label)
         return loss
 
-    def forward(self, input_img, target, validate=False):
+    def forward(self, input_img, target=None, validate=False):
         input_img = input_img.to(self.device)
-        target = target.to(self.device)
+        if target is not None:
+            target = target.to(self.device)
         pred = self.backbone(input_img)
 
         if self.training or validate: # training time return loss
