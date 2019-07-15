@@ -1,7 +1,10 @@
 
 import torch
-from torch import nn
+
 import torchvision.models as models
+
+from torch import nn
+from torch.nn import functional as F
 
 
 model_map = {
@@ -15,7 +18,7 @@ class Model(nn.Module):
         self.device = device
         self.mode = cfg['dataset']['method']
         weights_path = cfg['model']['weight_path']
-
+        
         if self.mode == 'classification':
             out_feature=cfg['dataset']['num_class']
             self.criterion = nn.CrossEntropyLoss()
@@ -30,7 +33,7 @@ class Model(nn.Module):
             cfg['dataset']['num_class']
         )
         self.backbone = model_map[cfg['model']['name']](*args)
-        
+
         if weights_path is not None:
             self.backbone.load_state_dict(torch.load(weights_path))
 
@@ -57,8 +60,12 @@ class Model(nn.Module):
         if self.training:
             return loss
         elif validate:
+            if self.mode == 'classification':
+                pred =  F.softmax(pred)
             return pred, loss
         else:
+            if self.mode == 'classification':
+                pred =  F.softmax(pred)
             return pred
 
 

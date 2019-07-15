@@ -16,8 +16,9 @@ class BlindDataset(Dataset):
     num_class : label의 갯수
     output : label의 형태로 classification일 경우 one-hot 형태, regression일 경우 0, 1, 2, 3, 4 형태
     """
-    def __init__(self, image_dir, df, transforms, num_class):
+    def __init__(self, image_dir, df, transforms, num_class, is_test):
         super().__init__()
+        self.is_test = is_test
         self.image_dir = image_dir
         self.df = df
         self.transforms = transforms
@@ -42,13 +43,18 @@ class BlindDataset(Dataset):
     def __getitem__(self, index):
         item = self.df.iloc[index]
         image = self.get_img(index)
+        target = None
         if self.transforms is not None:
             image = self.transforms(image)
         if 'diagnosis' not in self.df.keys():
-            target = torch.tensor(item['level'])
+            if not self.is_test:
+                target = torch.tensor(item['level'])
+            ids = item['image']
         else:
-            target = torch.tensor(item['diagnosis'])
-        return image, target
+            if not self.is_test:
+                target = torch.tensor(item['diagnosis'])
+            ids = item['id_code']
+        return image, target, ids
 
 
 def build_dataset(cfg, transforms,  split='train'):
@@ -60,6 +66,7 @@ def build_dataset(cfg, transforms,  split='train'):
     batch_size = dataset_config['batch_size']
     num_workers = dataset_config['num_workers']
     method = dataset_config['method']
+    is_test = split == 'test'
 
     if split == 'test':
         df = pd.read_csv(dataset_map['test'])
@@ -73,13 +80,13 @@ def build_dataset(cfg, transforms,  split='train'):
     elif split == 'valid':
         df = df[df['fold'] == fold]
 
-    args = (
-        image_dir,
-        df,
-        transforms,
-        num_class
+    dataset = BlindDataset(
+        image_dir=image_dir,
+        df=df,
+        transforms=transforms,
+        num_class=num_class,
+        is_test=is_test
     )
-    dataset = BlindDataset(*args)
     if split == 'train' and dataset_config['use_diabetic_retinopathy']:
         diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'], index_col='Unnamed: 0')
         del diabetic_df['Unnamed: 0.1']
@@ -87,7 +94,8 @@ def build_dataset(cfg, transforms,  split='train'):
             image_dir=diabetic_retinopathy_map['train_images'],
             df=diabetic_df,
             transforms=transforms,
-            num_class=num_class
+            num_class=num_class,
+            is_test=is_test
         )
 
         dataset = ConcatDataset([dataset, diabetic_dataset])
@@ -95,6 +103,6 @@ def build_dataset(cfg, transforms,  split='train'):
         dataset,
         shuffle=True,
         batch_size=batch_size,
-        num_workers=num_workers
+        num_workers=num_workers,
     )
     return data_loader

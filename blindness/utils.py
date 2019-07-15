@@ -3,7 +3,7 @@ import torch
 
 ON_KAGGLE = 'KAGGLE_WORKING_DIR' in os.environ
 
-def load_checkpoint(model, path):
+def load_checkpoint(model, path, return_others=True):
     data = torch.load(path)
     model.load_state_dict(data['model'])
     epoch = data['epoch']

@@ -26,7 +26,7 @@ def arg_parser():
     arg = parser.add_argument
     arg('mode', choices=['train', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
-    arg('--model_configs', nargs='+')
+    arg('--submit_configs', nargs='+')
     # for split_fold
     arg('--n_fold', type=int, default= 5)
     args = parser.parse_args()
@@ -84,7 +84,7 @@ def train(cfg):
         model.train()
         running_loss = 0.0
 
-        for image, target in tqdm(train_data):            
+        for image, target, _ in tqdm(train_data,  desc='Train'):            
             loss = model(image, target)
             batch_size = image.size(0)
             (batch_size * loss).backward()
@@ -105,7 +105,7 @@ def train(cfg):
         if valid_score > best_valid_score: 
             best_valid_score = valid_score
             copyfile(model_path, best_model_path)
-            
+
         # write in tensorboard
         if not ON_KAGGLE:
             writer.add_scalar('loss', running_loss, global_step=epoch)
@@ -124,18 +124,16 @@ def validate(model, valid_data, cfg):
     all_losses, all_predictions, all_targets = [], [], []
 
     with torch.no_grad():
-        for i, item in tqdm(enumerate(valid_data)):
-            image, target = item
+        for i, item in tqdm(enumerate(valid_data), desc='Valid'):
+            image, target, _ = item
             batch_size = image.size(0)
             outputs, loss = model(image, target, validate=True)
             all_losses.append(loss.detach().cpu().numpy())
             start_index = i*batch_size
             end_index = len(valid_data) if (i+1)*batch_size > len(valid_data) else (i+1)*batch_size
 
-            predictions = torch.sigmoid(outputs)
-
             all_losses.append(loss)
-            all_predictions.append(predictions.cpu().numpy())
+            all_predictions.append(outputs.cpu().numpy())
             all_targets.append(target.numpy())
 
         all_predictions = np.concatenate(all_predictions)
@@ -149,6 +147,33 @@ def validate(model, valid_data, cfg):
     return valid_loss, valid_score
 
 def predict(cfg):
+    device = torch.device("cuda:0")
+
+    test_transform  = build_transforms(cfg, split='test')
+    test_data = build_dataset(cfg, test_transform, split='test')
+
+    model = build_model(cfg, device)
+    output_dir = Path('output', cfg['name'])
+    best_model_path = output_dir / 'best_model.pt'
+
+    if best_model_path.exists(): # best modelpath가 있을 경우 load
+        load_checkpoint(model, best_model_path, False)
+
+    model.eval()
+
+    with torch.no_grad():
+        for image, target, ids in tqdm(test_data, desc='Predict'):
+            outputs = model(inputs)
+            all_outputs.append(outputs.data.cpu().numpy())
+            all_ids.extend(ids)
+    df = pd.DataFrame(
+        data=np.concatenate(all_outputs),
+        index=all_ids,
+        columns=map(str, range(N_CLASSES)))
+    df = mean_df(df)
+    df.to_hdf(out_path, 'prob', index_label='id')
+    print('Saved predictions to {}'.format(out_path))
+    
 
     return None
 
