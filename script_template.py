@@ -19,7 +19,9 @@ def run(command):
     os.system('export PYTHONPATH=${PYTHONPATH}:/kaggle/working && ' + command)
 
 run('python setup.py develop --install-dir /kaggle/working')
-#run('python -m blindness.make_folds')
-#run('python -m blindness.main train')
+run('python -m blindness.make_folds --with_size true')
+run('python -m blindness.main train')
+run('python -m blindness.main valid --config_path blindness/configs/base_valid_large.json')
+run('python -m blindness.main valid --config_path blindness/configs/base_small_large.json')
 run('python -m blindness.main predict --config_path blindness/configs/base.json --model_path ../input/baseline/best_model.pt')
 run('python -m blindness.main submit --predictions output/base_test/prediction.pt')

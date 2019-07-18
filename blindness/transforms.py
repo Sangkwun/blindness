@@ -1,6 +1,7 @@
 import random
 
 from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply
+from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, ColorJitter, RandomGrayscale
 
 class RandomRotate(object):
     def __init__(self):
@@ -19,8 +20,8 @@ def build_transforms(cfg, split='train'):
     transforms = []
     for transform in input_cfg['transforms']:
         if transform == 'random_resized_crop':
-            scale = (0.5, 1.2) if is_train else (1.0, 1.0)
-            ratio = (0.75, 1.3) if is_train else (1.0, 1.0)
+            scale = (0.8, 1.2) if is_train else (1.0, 1.0)
+            ratio = (1.0, 1.0) if is_train else (1.0, 1.0)
             transforms.append(
                 RandomResizedCrop(
                     (width, height),
@@ -30,7 +31,26 @@ def build_transforms(cfg, split='train'):
             )
         elif transform == 'random_rotate':
             transforms.append(RandomRotate())
+        elif transform == 'random_vertical_flip':
+            p = 0.5 if is_train else 0.25
+            transforms.append(RandomVerticalFlip(p))
+        elif transform == 'random_horizontal_flip':
+            p = 0.5 if is_train else 0.25
+            transforms.append(RandomHorizontalFlip(p))
+        elif transform == 'random_color_jitter':
+            brightness = 0.1 if is_train else 0.0
+            contrast = 0.1 if is_train else 0.0
+            transforms.append(ColorJitter(
+                brightness=brightness,
+                contrast=contrast,
+                saturation=0,
+                hue=0,
+            ))
+        elif transform == 'random_grayscale':
+            p = 0.5 if is_train else 0.25
+            transforms.append(RandomGrayscale(p))
         else:
+            print(transform)
             raise NotImplementedError
 
     transforms += [

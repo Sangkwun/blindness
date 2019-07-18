@@ -1,5 +1,6 @@
 import os
 
+from .utils import ON_KAGGLE
 
 data_path = '../input/aptos2019-blindness-detection'
 
@@ -18,3 +19,7 @@ diabetic_retinopathy_map = {
     "train": os.path.join(diabetic_retinopathy_path, 'trainLabels_cropped.csv'),
     "train_images": os.path.join(diabetic_retinopathy_path, 'resized_train_cropped'),
 }
+
+if ON_KAGGLE:
+    diabetic_retinopathy_map['train_images'] = \
+        os.path.join(diabetic_retinopathy_path, 'resized_train_cropped', 'resized_train_cropped')
