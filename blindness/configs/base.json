@@ -14,9 +14,12 @@
         "fold": 0,
         "num_class": 5,
         "batch_size": 32,
-        "num_workers": 4,
+        "num_workers": 2,
         "method":"classification",
-        "use_diabetic_retinopathy": true
+        "use_diabetic_retinopathy": true,
+        "valid_with_both": true,
+        "valid_with_large": false,
+        "valid_with_small": false
     },
     "model": {
         "name": "resnet50",

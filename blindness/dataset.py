@@ -82,6 +82,12 @@ def build_dataset(cfg, transforms,  split='train'):
     elif split == 'valid':
         df = df[df['fold'] == fold]
 
+        if not dataset_config['valid_with_both']:
+            if dataset_config['valid_with_large']:
+                df = df[df['large']]
+            elif dataset_config['valid_with_small']:
+                df = df[~df['large']]
+
     dataset = BlindDataset(
         image_dir=image_dir,
         df=df,

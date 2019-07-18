@@ -26,7 +26,7 @@ if not ON_KAGGLE:
 def arg_parser():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg('mode', choices=['train', 'predict', 'submit'])
+    arg('mode', choices=['train','valid', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
     arg('--model_path', type=str)
     arg('--predictions', nargs='+')
@@ -43,6 +43,8 @@ def main():
 
     if args.mode == 'train':
         train(cfg)
+    elif args.mode == 'valid':
+        run_valid(cfg, args.model_path)
     elif args.mode == 'predict':
         predict(cfg, args.model_path)
     elif args.mode == 'submit':
@@ -166,6 +168,26 @@ def validate(model, valid_data, cfg):
         print('val_score: {:.4f}'.format(valid_score))
 
     return valid_loss, valid_score
+
+def run_valid(cfg, model_path):
+    device = torch.device("cuda:0")
+    valid_transform  = build_transforms(cfg, split='valid')
+    valid_data = build_dataset(cfg, valid_transform, split='valid')
+
+    output_dir = Path('output', cfg['name'])
+    output_dir.mkdir(exist_ok=True, parents=True)
+    best_model_path = output_dir / 'best_model.pt'
+    
+    model = build_model(cfg, device)
+
+    if model_path is not None:
+        load_checkpoint(model, model_path, False)
+    elif best_model_path.exists(): # best modelpath가 있을 경우 load
+        load_checkpoint(model, best_model_path, False)
+
+    valid_loss, valid_score = validate(model, valid_data, cfg)
+    print('Validation Loss: {:.4f}'.format(valid_loss))
+    print('val_score: {:.4f}'.format(valid_score))
 
 def predict(cfg, model_path):
     cfg['model']['pretrained'] = False
