@@ -12,7 +12,7 @@ inv_normalize = transforms.Compose([
         transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ])
     ])
 
-config_path = './blindness/configs/base_aug.json'
+config_path = 'blindness/configs/base_aug.json'
 
 with open(config_path, 'r') as f:
     cfg = json.loads(f.read())

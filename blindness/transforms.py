@@ -1,7 +1,11 @@
+import cv2
 import random
+import numpy as np
 
+from PIL import Image
 from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, ColorJitter, RandomGrayscale
+
 
 class RandomRotate(object):
     def __init__(self):
@@ -9,6 +13,19 @@ class RandomRotate(object):
     def __call__(self, img):
         degree = random.choice(self.degrees)
         return img.rotate(degree)
+
+
+class BenGrahamAug(object):
+    def __init__(self, p):
+        self.p = p
+
+    def __call__(self, img):
+        if random.random() < self.p:
+            w,h = img.size
+            cv_img = np.array(img) 
+            cv_img = cv2.addWeighted (cv_img, 4, cv2.GaussianBlur(cv_img , (0,0) , w/10) ,-4 ,128)
+            img = Image.fromarray(cv_img)
+        return img
 
 
 def build_transforms(cfg, split='train'):
@@ -49,6 +66,9 @@ def build_transforms(cfg, split='train'):
         elif transform == 'random_grayscale':
             p = 0.5 if is_train else 0.25
             transforms.append(RandomGrayscale(p))
+        elif transform == 'ben_graham':
+            p = 0.5 if is_train else 0.25
+            transforms.append(BenGrahamAug(p))
         else:
             print(transform)
             raise NotImplementedError

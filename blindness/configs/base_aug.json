@@ -9,7 +9,8 @@
             "random_vertical_flip",
             "random_horizontal_flip",
             "random_color_jitter",
-            "random_grayscale"
+            "random_grayscale",
+            "ben_graham"
         ],
         "test_transforms": [
             "random_resized_crop"
