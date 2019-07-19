@@ -65,7 +65,6 @@ def main():
     parser.add_argument('--n-folds', type=int, default=5)
     parser.add_argument('--with_size', action='store_true')
     args = parser.parse_args()
-    import pdb; pdb.set_trace()
     df = make_folds(n_folds=args.n_folds, with_size=args.with_size)
     df.to_csv('folds.csv', index=None)
 

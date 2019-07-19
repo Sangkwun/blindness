@@ -16,7 +16,7 @@
         "batch_size": 32,
         "num_workers": 2,
         "method":"classification",
-        "use_diabetic_retinopathy": true,
+        "use_diabetic_retinopathy": false,
         "valid_with_both": false,
         "valid_with_large": false,
         "valid_with_small": true
