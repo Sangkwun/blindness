@@ -1,5 +1,5 @@
 {
-    "name": "base_test",
+    "name": "base_aug_test",
     "input": {
         "width": 288,
         "height": 288,
@@ -19,10 +19,11 @@
     "dataset": {
         "fold": 0,
         "num_class": 5,
-        "batch_size": 1,
+        "batch_size": 32,
         "num_workers": 2,
-        "method":"classification",
-        "use_diabetic_retinopathy": false,
+        "method": "classification",
+        "use_original": true,
+        "use_diabetic_retinopathy": true,
         "valid_with_both": true,
         "valid_with_large": false,
         "valid_with_small": false
