@@ -6,6 +6,7 @@ import argparse
 import pandas as pd
 import numpy as np
 
+from torch import cuda
 from pathlib import Path
 from shutil import copyfile
 from torch import optim, nn
@@ -14,7 +15,7 @@ from sklearn.metrics import cohen_kappa_score
 
 from .configs import dataset_map
 from .models import build_model
-from .transforms import build_transforms
+from .transforms import build_transforms, build_tta_transforms
 from .dataset import build_dataset
 from .utils import load_checkpoint, save_checkpoint, ON_KAGGLE
 from .optimizer import build_optimizer, build_scheduler
@@ -28,6 +29,7 @@ def arg_parser():
     arg = parser.add_argument
     arg('mode', choices=['train','valid', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
+    arg('--tta', type=int, default=0)
     arg('--model_path', type=str)
     arg('--predictions', nargs='+')
     arg('--output_path', type=str, default='submission.csv')
@@ -44,17 +46,19 @@ def main():
     if args.mode == 'train':
         train(cfg)
     elif args.mode == 'valid':
-        run_valid(cfg, args.model_path)
+        run_valid(cfg, args.model_path, args.num_tta)
     elif args.mode == 'predict':
-        predict(cfg, args.model_path)
+        predict(cfg, args.model_path, args.num_tta)
     elif args.mode == 'submit':
         submit(args.predictions, args.output_path)
     else:
         raise NotImplementedError
 
 def train(cfg):
-    device = torch.device("cuda:0")
-
+    if cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
     train_transform  = build_transforms(cfg, split='train')
     valid_transform  = build_transforms(cfg, split='valid')
 
@@ -169,8 +173,11 @@ def validate(model, valid_data, cfg):
 
     return valid_loss, valid_score
 
-def run_valid(cfg, model_path):
-    device = torch.device("cuda:0")
+def run_valid(cfg, model_path, num_tta):
+    if cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
     valid_transform  = build_transforms(cfg, split='valid')
     valid_data = build_dataset(cfg, valid_transform, split='valid')
 
@@ -189,9 +196,12 @@ def run_valid(cfg, model_path):
     print('Validation Loss: {:.4f}'.format(valid_loss))
     print('val_score: {:.4f}'.format(valid_score))
 
-def predict(cfg, model_path):
+def predict(cfg, model_path, num_tta):
     cfg['model']['pretrained'] = False
-    device = torch.device("cuda:0")
+    if cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
 
     test_transform  = build_transforms(cfg, split='test')
     test_data = build_dataset(cfg, test_transform, split='test')
@@ -235,7 +245,7 @@ def submit(predictions, output):
         df = df.reindex(sample_submission.index)
         dfs.append(df)
     df = pd.concat(dfs)
-    df = df.groupby(level=0).mean()
+    df = df.groupby(level=0).mean() # get mean of predictions
     df = df.apply(get_classes, axis=1)
     df.name = 'diagnosis'
     df.to_csv(output, header=True)

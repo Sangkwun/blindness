@@ -28,14 +28,9 @@ class BenGrahamAug(object):
         return img
 
 
-def build_transforms(cfg, split='train'):
-    is_train = split == 'train'
-    input_cfg = cfg['input']
-    width = input_cfg['width']
-    height = input_cfg['height']
-
+def get_transforms(transforms_list, width, height, is_train):
     transforms = []
-    for transform in input_cfg['transforms']:
+    for transform in transforms_list:
         if transform == 'random_resized_crop':
             scale = (0.8, 1.2) if is_train else (1.0, 1.0)
             ratio = (1.0, 1.0) if is_train else (1.0, 1.0)
@@ -72,6 +67,19 @@ def build_transforms(cfg, split='train'):
         else:
             print(transform)
             raise NotImplementedError
+    return transforms
+
+def build_transforms(cfg, split='train'):
+    is_train = split == 'train'
+    input_cfg = cfg['input']
+    width = input_cfg['width']
+    height = input_cfg['height']
+
+    transforms = get_transforms(
+        input_cfg['transforms'],
+        width,
+        height,
+        is_train)
 
     transforms += [
         ToTensor(),
