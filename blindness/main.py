@@ -118,7 +118,7 @@ def train(cfg):
 
             step += 1
 
-            running_loss += loss.item() * image.size(0)
+            running_loss += loss.item()
 
 
         epoch_loss = running_loss / len(train_data)
@@ -169,7 +169,7 @@ def validate(model, valid_data, cfg):
         all_predictions = np.concatenate(all_predictions)
         all_targets = np.concatenate(all_targets)
 
-        valid_loss = sum([loss.item() for loss in all_losses])/len(all_losses)
+        valid_loss = sum([loss.item() for loss in all_losses])/len(valid_data)
         valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
         print('Validation Loss: {:.4f}'.format(valid_loss))
         print('val_score: {:.4f}'.format(valid_score))
