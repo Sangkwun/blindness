@@ -133,7 +133,7 @@ def train(cfg):
         # write to tensorboard
         if not ON_KAGGLE:
             if scheduler is not None: lr = scheduler.get_lr()[-1]
-            writer.add_scalar('loss', running_loss, global_step=epoch)
+            writer.add_scalar('loss', epoch_loss, global_step=epoch)
             writer.add_scalar('lr', lr, global_step=epoch)
             writer.add_scalar('valid_loss', valid_loss, global_step=epoch)
             writer.add_scalar('valid_score', valid_score, global_step=epoch)

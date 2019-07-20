@@ -96,7 +96,6 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
     fold = dataset_config['fold']
     batch_size = dataset_config['batch_size']
     num_workers = dataset_config['num_workers']
-    method = dataset_config['method']
     use_upsampling = dataset_config['upsampling']
     is_test = split == 'test'
 
