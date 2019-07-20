@@ -24,7 +24,7 @@ class BlindDataset(Dataset):
                  transforms,
                  num_class,
                  is_test,
-                 num_tta):
+                 num_tta=0):
         super().__init__()
         self.is_test = is_test
         self.image_dir = image_dir
