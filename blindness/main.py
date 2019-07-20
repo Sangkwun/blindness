@@ -29,6 +29,7 @@ def arg_parser():
     arg = parser.add_argument
     arg('mode', choices=['train','valid', 'predict', 'submit'])
     arg('--config_path', type=str, default='blindness/configs/base.json')
+    arg('--name', type=str)
     arg('--tta', type=int, default=0)
     arg('--model_path', type=str)
     arg('--predictions', nargs='+')
@@ -42,6 +43,8 @@ def main():
     args = arg_parser()
     with open(args.config_path, 'r') as f:
         cfg = json.loads(f.read())
+    if args.name is not None:
+        cfg['name'] = args.name
 
     if args.mode == 'train':
         train(cfg)
