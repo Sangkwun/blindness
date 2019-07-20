@@ -15,7 +15,7 @@ from sklearn.metrics import cohen_kappa_score
 
 from .configs import dataset_map
 from .models import build_model
-from .transforms import build_transforms, build_tta_transforms
+from .transforms import build_transforms
 from .dataset import build_dataset
 from .utils import load_checkpoint, save_checkpoint, ON_KAGGLE
 from .optimizer import build_optimizer, build_scheduler
