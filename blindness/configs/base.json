@@ -16,10 +16,11 @@
         "batch_size": 32,
         "num_workers": 2,
         "method":"classification",
+        "use_original": true,
         "use_diabetic_retinopathy": true,
         "valid_with_both": true,
         "valid_with_large": false,
-        "valid_with_small": false
+        "valid_with_small": false,
     },
     "model": {
         "name": "resnet50",

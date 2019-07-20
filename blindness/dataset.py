@@ -77,11 +77,13 @@ def build_dataset(cfg, transforms,  split='train'):
         df = pd.read_csv(dataset_map['fold'])
         image_dir = dataset_map['train_images']
     
-    if split == 'train':
-        df = df[df['fold'] != fold]
-    elif split == 'valid':
-        df = df[df['fold'] == fold]
+    if dataset_config['use_original']:
+        if split == 'train':
+            df = df[df['fold'] != fold]
+        elif split == 'valid':
+            df = df[df['fold'] == fold]
 
+    if split == 'valid':
         if not dataset_config['valid_with_both']:
             if dataset_config['valid_with_large']:
                 df = df[df['large']]
@@ -106,7 +108,11 @@ def build_dataset(cfg, transforms,  split='train'):
             is_test=is_test
         )
 
-        dataset = ConcatDataset([dataset, diabetic_dataset])
+        if not dataset_config['use_original']:
+            dataset = diabetic_dataset
+        else:
+            dataset = ConcatDataset([dataset, diabetic_dataset])
+
     data_loader = DataLoader(
         dataset,
         shuffle=True,
