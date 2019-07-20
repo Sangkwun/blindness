@@ -8,17 +8,19 @@ from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, Col
 
 
 class RandomRotate(object):
-    def __init__(self):
+    def __init__(self, p):
+        self.p = p
         self.degrees = [0, 90, 180, 270]
     def __call__(self, img):
-        degree = random.choice(self.degrees)
-        return img.rotate(degree)
+        if random.random() < self.p:
+            degree = random.choice(self.degrees)
+            img =  img.rotate(degree)
+        return img
 
 
 class BenGrahamAug(object):
     def __init__(self, p):
         self.p = p
-
     def __call__(self, img):
         if random.random() < self.p:
             w,h = img.size
@@ -28,12 +30,19 @@ class BenGrahamAug(object):
         return img
 
 
-def get_transforms(transforms_list, width, height, is_train):
+def get_transforms(transforms_list,
+                   width,
+                   height,
+                   is_train,
+                   is_tta):
     transforms = []
     for transform in transforms_list:
         if transform == 'random_resized_crop':
             scale = (0.8, 1.2) if is_train else (1.0, 1.0)
             ratio = (1.0, 1.0) if is_train else (1.0, 1.0)
+            if is_tta:
+                scale = (0.8, 1.2)
+                ratio = (1.0, 1.0)
             transforms.append(
                 RandomResizedCrop(
                     (width, height),
@@ -42,16 +51,26 @@ def get_transforms(transforms_list, width, height, is_train):
                 )
             )
         elif transform == 'random_rotate':
-            transforms.append(RandomRotate())
+            p = 0.5 if is_train else 0.25
+            if is_tta:
+                p = 0.3
+            transforms.append(RandomRotate(p))
         elif transform == 'random_vertical_flip':
             p = 0.5 if is_train else 0.25
+            if is_tta:
+                p = 0.3
             transforms.append(RandomVerticalFlip(p))
         elif transform == 'random_horizontal_flip':
             p = 0.5 if is_train else 0.25
+            if is_tta:
+                p = 0.3
             transforms.append(RandomHorizontalFlip(p))
         elif transform == 'random_color_jitter':
             brightness = 0.1 if is_train else 0.0
             contrast = 0.1 if is_train else 0.0
+            if is_tta:
+                brightness = 0.1
+                contrast = 0.1
             transforms.append(ColorJitter(
                 brightness=brightness,
                 contrast=contrast,
@@ -60,9 +79,13 @@ def get_transforms(transforms_list, width, height, is_train):
             ))
         elif transform == 'random_grayscale':
             p = 0.5 if is_train else 0.25
+            if is_tta:
+                p = 0.3
             transforms.append(RandomGrayscale(p))
         elif transform == 'ben_graham':
             p = 0.5 if is_train else 0.25
+            if is_tta:
+                p = 0.3
             transforms.append(BenGrahamAug(p))
         else:
             print(transform)

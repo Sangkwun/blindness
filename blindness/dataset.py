@@ -16,15 +16,24 @@ class BlindDataset(Dataset):
     num_class : label의 갯수
     output : label의 형태로 classification일 경우 one-hot 형태, regression일 경우 0, 1, 2, 3, 4 형태
     """
-    def __init__(self, image_dir, df, transforms, num_class, is_test):
+    def __init__(self,
+                 image_dir,
+                 df,
+                 transforms,
+                 num_class,
+                 is_test,
+                 num_tta):
         super().__init__()
         self.is_test = is_test
         self.image_dir = image_dir
         self.df = df
         self.transforms = transforms
         self.num_class = num_class
+        self.num_tta = num_tta
 
     def __len__(self):
+        if self.num_tta != 0:
+            return len(self.df) * self.num_tta
         return len(self.df)
 
     def get_img(self, index):
@@ -41,6 +50,8 @@ class BlindDataset(Dataset):
         return image
 
     def __getitem__(self, index):
+        if self.num_tta > 0:
+            index = index % len(self.df) # find original index
         item = self.df.iloc[index]
         image = self.get_img(index)
 
@@ -59,7 +70,7 @@ class BlindDataset(Dataset):
         return image, target, ids
 
 
-def build_dataset(cfg, transforms,  split='train'):
+def build_dataset(cfg, transforms,  split='train', num_tta=0):
     assert split in ['train', 'valid', 'test']
     dataset_config = cfg['dataset']
 
@@ -95,7 +106,8 @@ def build_dataset(cfg, transforms,  split='train'):
         df=df,
         transforms=transforms,
         num_class=num_class,
-        is_test=is_test
+        is_test=is_test,
+        num_tta=num_tta
     )
     if split == 'train' and dataset_config['use_diabetic_retinopathy']:
         diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'], index_col='Unnamed: 0')

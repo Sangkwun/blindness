@@ -46,7 +46,7 @@ def main():
     if args.mode == 'train':
         train(cfg)
     elif args.mode == 'valid':
-        run_valid(cfg, args.model_path, args.num_tta)
+        run_valid(cfg, args.model_path)
     elif args.mode == 'predict':
         predict(cfg, args.model_path, args.num_tta)
     elif args.mode == 'submit':
@@ -173,13 +173,15 @@ def validate(model, valid_data, cfg):
 
     return valid_loss, valid_score
 
-def run_valid(cfg, model_path, num_tta):
+def run_valid(cfg, model_path):
     if cuda.is_available():
         device = torch.device("cuda:0")
     else:
         device = torch.device("cpu")
     valid_transform  = build_transforms(cfg, split='valid')
-    valid_data = build_dataset(cfg, valid_transform, split='valid')
+    valid_data = build_dataset(cfg,
+                               valid_transform,
+                               split='valid')
 
     output_dir = Path('output', cfg['name'])
     output_dir.mkdir(exist_ok=True, parents=True)
@@ -204,7 +206,10 @@ def predict(cfg, model_path, num_tta):
         device = torch.device("cpu")
 
     test_transform  = build_transforms(cfg, split='test')
-    test_data = build_dataset(cfg, test_transform, split='test')
+    test_data = build_dataset(cfg,
+                              test_transform,
+                              split='test',
+                              num_tta=num_tta)
     
     model = build_model(cfg, device)
     output_dir = Path('output', cfg['name'])
