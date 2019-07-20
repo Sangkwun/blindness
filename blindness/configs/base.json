@@ -20,7 +20,8 @@
         "use_diabetic_retinopathy": true,
         "valid_with_both": true,
         "valid_with_large": false,
-        "valid_with_small": false
+        "valid_with_small": false,
+        "upsampling": false
     },
     "model": {
         "name": "resnet50",

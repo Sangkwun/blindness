@@ -4,6 +4,7 @@
         "width": 288,
         "height": 288,
         "transforms": [
+            "crop_black",
             "random_resized_crop",
             "random_rotate",
             "random_vertical_flip",
@@ -23,10 +24,11 @@
         "num_workers": 2,
         "method": "classification",
         "use_original": true,
-        "use_diabetic_retinopathy": true,
+        "use_diabetic_retinopathy": false,
         "valid_with_both": true,
         "valid_with_large": false,
-        "valid_with_small": false
+        "valid_with_small": false,
+        "upsampling": false
     },
     "model": {
         "name": "resnet50",

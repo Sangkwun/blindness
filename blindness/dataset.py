@@ -1,8 +1,10 @@
+import cv2
 import torch
 import pandas as pd
+
 from glob import glob
 from PIL import Image
-import cv2
+from sklearn.utils import resample
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from .configs import dataset_map, diabetic_retinopathy_map
@@ -70,6 +72,22 @@ class BlindDataset(Dataset):
         return image, target, ids
 
 
+def upsampling(df):
+    if 'diagnosis' in df.keys():
+        gb = df.groupby(['diagnosis'])
+    elif 'level' in df.keys():
+        gb = df.groupby(['level'])
+    groups = gb.groups
+    max_count = max([len(gb.get_group(k)) for k in groups.keys()])
+    
+    df_list = list()
+    for key in groups.keys():
+        sub_df = resample(gb.get_group(key), n_samples=max_count, random_state=0)
+        df_list.append(sub_df)
+
+    return pd.concat(df_list)
+
+
 def build_dataset(cfg, transforms,  split='train', num_tta=0):
     assert split in ['train', 'valid', 'test']
     dataset_config = cfg['dataset']
@@ -79,6 +97,7 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
     batch_size = dataset_config['batch_size']
     num_workers = dataset_config['num_workers']
     method = dataset_config['method']
+    use_upsampling = dataset_config['upsampling']
     is_test = split == 'test'
 
     if split == 'test':
@@ -91,6 +110,7 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
     if dataset_config['use_original']:
         if split == 'train':
             df = df[df['fold'] != fold]
+            if use_upsampling: df = upsampling(df)
         elif split == 'valid':
             df = df[df['fold'] == fold]
 
@@ -112,6 +132,7 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
     if split == 'train' and dataset_config['use_diabetic_retinopathy']:
         diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'], index_col='Unnamed: 0')
         del diabetic_df['Unnamed: 0.1']
+        if use_upsampling: diabetic_df = upsampling(diabetic_df) # up sampling for diabetic
         diabetic_dataset = BlindDataset(
             image_dir=diabetic_retinopathy_map['train_images'],
             df=diabetic_df,
