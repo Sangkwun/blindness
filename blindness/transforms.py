@@ -2,8 +2,8 @@ import cv2
 import random
 import numpy as np
 
-from PIL import Image, ImageDraw
-from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply
+from PIL import Image
+from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply, Resize
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, ColorJitter, RandomGrayscale
 
 
@@ -60,6 +60,12 @@ def get_transforms(transforms_list,
         if transform == 'random_resized_crop':
             scale = (0.8, 1.2) if is_train else (1.0, 1.0)
             ratio = (1.0, 1.0) if is_train else (1.0, 1.0)
+            transforms.append(
+                Resize(
+                    (width, height)
+                )
+            )
+        elif transform == 'resize':
             transforms.append(
                 RandomResizedCrop(
                     (width, height),

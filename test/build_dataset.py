@@ -29,7 +29,7 @@ print(len(train_data.dataset)+len(valida_data.dataset))
 output_dir = Path('output/vis_input')
 output_dir.mkdir(exist_ok=True, parents=True)
 
-data_iterator = iter(train_data)
+data_iterator = iter(valida_data)
 for i in range(50):
     img, target, ids = next(data_iterator)
     print(img.shape, target[0].cpu())
