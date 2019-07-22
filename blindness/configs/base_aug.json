@@ -14,7 +14,8 @@
             "ben_graham"
         ],
         "test_transforms": [
-            "random_resized_crop"
+            "crop_black",
+            "resize"
         ]
     },
     "dataset": {

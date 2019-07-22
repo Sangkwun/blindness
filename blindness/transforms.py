@@ -111,6 +111,11 @@ def build_transforms(cfg, split='train'):
     width = input_cfg['width']
     height = input_cfg['height']
 
+    if split == 'train':
+        transform_list = input_cfg['transforms']
+    else:
+        transform_list = input_cfg['test_transforms']
+
     transforms = get_transforms(
         input_cfg['transforms'],
         width,
