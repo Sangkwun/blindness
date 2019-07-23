@@ -6,6 +6,8 @@ from PIL import Image
 from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply, Resize
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, ColorJitter, RandomGrayscale
 
+from .autoaugment import ImageNetPolicy, CIFAR10Policy, SVHNPolicy
+
 
 class CropBlack(object):
     def __init__(self, p):
@@ -100,6 +102,12 @@ def get_transforms(transforms_list,
         elif transform == 'ben_graham':
             p = 0.5 if is_train else 0.25
             transforms.append(BenGrahamAug(p))
+        elif transform == 'imagenet_poilcy':
+            transforms.append(ImageNetPolicy())
+        elif transform == 'cifar_policy':
+            transforms.append(CIFAR10Policy())
+        elif transform == 'svhn_policy':
+            transform.append(SVHNPolicy())
         else:
             print(transform)
             raise NotImplementedError
