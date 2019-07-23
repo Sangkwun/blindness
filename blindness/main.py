@@ -13,7 +13,7 @@ from torch import optim, nn
 from tqdm import tqdm, trange
 from sklearn.metrics import cohen_kappa_score
 
-from .configs import dataset_map
+from .configs import dataset_map, get_cfg
 from .models import build_model
 from .transforms import build_transforms
 from .dataset import build_dataset
@@ -28,7 +28,7 @@ def arg_parser():
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
     arg('mode', choices=['train','valid', 'predict', 'submit'])
-    arg('--config_path', type=str, default='blindness/configs/base.json')
+    arg('--config_path', type=str)
     arg('--name', type=str)
     arg('--tta', type=int, default=0)
     arg('--model_path', type=str)
@@ -41,8 +41,8 @@ def arg_parser():
 
 def main():
     args = arg_parser()
-    with open(args.config_path, 'r') as f:
-        cfg = json.loads(f.read())
+    
+    cfg = get_cfg(args.config_path)
     if args.name is not None:
         cfg['name'] = args.name
 
