@@ -52,7 +52,11 @@ default_config = {
         "valid_with_both": True,
         "valid_with_large": False,
         "valid_with_small": False,
-        "upsampling": False
+        "upsampling": False,
+        "use_class_ratio": True,
+        "use_dataset_ratio": True,
+        "class_ratio": [1, 1, 1, 1, 1], # diagnosis 0, 1, 2, 3, 4
+        "dataset_ratio": [1, 1], # origin_train, diabetic
     },
     "model": {
         "name": "resnet50",
