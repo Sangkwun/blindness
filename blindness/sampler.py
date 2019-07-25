@@ -40,13 +40,11 @@ class RatioSampler(Sampler):
         else:
             self.dataset_ratio = [1]
 
-        self._fixed_ratio_indices()
-
     def __iter__(self):
         return iter(self._fixed_ratio_indices())
 
     def __len__(self):
-        return len(self.df)
+        return len(self._fixed_ratio_indices())
     
     def set_epoch(self, epoch):
         self.epoch = epoch
