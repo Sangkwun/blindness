@@ -19,6 +19,7 @@ from .transforms import build_transforms
 from .dataset import build_dataset
 from .utils import load_checkpoint, save_checkpoint, ON_KAGGLE
 from .optimizer import build_optimizer, build_scheduler
+from .custom_loss import decode_label, decode_label_np
 
 
 if not ON_KAGGLE:
@@ -51,7 +52,7 @@ def main():
     elif args.mode == 'valid':
         run_valid(cfg, args.model_path)
     elif args.mode == 'predict':
-        predict(cfg, args.model_path, args.num_tta)
+        predict(cfg, args.model_path, args.tta)
     elif args.mode == 'submit':
         submit(args.predictions, args.output_path)
     else:
@@ -158,6 +159,8 @@ def validate(model, valid_data, cfg):
             image, target, _ = item
             batch_size = image.size(0)
             outputs, loss = model(image, target, validate=True)
+            if cfg['dataset']['method'] == 'h_classification_':
+                outputs = decode_label(outputs)
             all_losses.append(loss.detach().cpu().numpy())
             start_index = i*batch_size
             end_index = len(valid_data) if (i+1)*batch_size > len(valid_data) else (i+1)*batch_size
@@ -169,12 +172,17 @@ def validate(model, valid_data, cfg):
         all_predictions = np.concatenate(all_predictions)
         all_targets = np.concatenate(all_targets)
 
-        valid_loss = sum([loss.item() for loss in all_losses])/len(valid_data.dataset)
-        valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
+        valid_loss = sum([loss.item() for loss in all_losses])
+        
+        if cfg['dataset']['method'] == 'h_classification_':
+            valid_score = cohen_kappa_score(all_targets, all_predictions, weights='quadratic')
+        else:
+            valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
         print('Validation Loss: {:.4f}'.format(valid_loss))
         print('val_score: {:.4f}'.format(valid_score))
 
     return valid_loss, valid_score
+
 
 def run_valid(cfg, model_path):
     if cuda.is_available():
@@ -254,7 +262,9 @@ def submit(predictions, output):
         dfs.append(df)
     df = pd.concat(dfs)
     df = df.groupby(level=0).mean() # get mean of predictions
-    df = df.apply(get_classes, axis=1)
+    # need update h_loss & normal loss
+    # df = df.apply(get_classes, axis=1) # normal loss
+    df = df.apply(decode_label_np, axis=1) # h_loss
     df.name = 'diagnosis'
     df.to_csv(output, header=True)
 

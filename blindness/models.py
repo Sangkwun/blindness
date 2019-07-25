@@ -1,4 +1,3 @@
-
 import torch
 
 import torchvision.models as models
@@ -6,6 +5,7 @@ import torchvision.models as models
 from torch import nn
 from torch.nn import functional as F
 
+from .custom_loss import HierarchLoss
 
 model_map = {
     "resnet50": models.resnet50
@@ -22,9 +22,15 @@ class Model(nn.Module):
         if self.mode == 'classification':
             out_feature=cfg['dataset']['num_class']
             self.criterion = nn.CrossEntropyLoss()
+        elif self.mode == 'h_classification':
+            out_feature=cfg['dataset']['num_class']
+            self.criterion = HierarchLoss(method=self.mode)
         elif self.mode == 'regression':
             out_feature=1
             self.criterion = nn.MSELoss()
+        elif self.mode == 'h_regression':
+            out_feature=cfg['dataset']['num_class']
+            self.criterion = HierarchLoss(method=self.mode)
         else: 
             raise ValueError
 
@@ -61,7 +67,9 @@ class Model(nn.Module):
         if self.training:
             return loss
         elif validate:
-            if self.mode == 'classification':
+            if self.mode == 'h_classification':
+                pred = pred
+            elif self.mode == 'classification':
                 pred =  F.softmax(pred)
             return pred, loss
         else:
