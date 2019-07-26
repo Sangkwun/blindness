@@ -5,7 +5,7 @@ import torchvision.models as models
 from torch import nn
 from torch.nn import functional as F
 
-from .custom_loss import HierarchLoss
+from .custom_loss import HierarchLoss, decode_label
 
 model_map = {
     "resnet50": models.resnet50
@@ -68,7 +68,7 @@ class Model(nn.Module):
             return loss
         elif validate:
             if self.mode == 'h_classification':
-                pred = pred
+                pred = decode_label(pred)
             elif self.mode == 'classification':
                 pred =  F.softmax(pred)
             return pred, loss

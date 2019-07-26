@@ -11,7 +11,7 @@ data_path = '../input/aptos2019-blindness-detection'
 dataset_map = {
     "train": os.path.join(data_path, 'train.csv'),
     "test": os.path.join(data_path, 'test.csv'),
-    "fold": 'folds.csv',
+    "fold": '../input/blind-fold/folds.csv',
     "train_images": os.path.join(data_path, 'train_images'),
     "test_images": os.path.join(data_path, 'test_images'),
     "submission": os.path.join(data_path, 'sample_submission.csv')
@@ -56,7 +56,7 @@ default_config = {
         "use_class_ratio": True,
         "use_dataset_ratio": True,
         "class_ratio": [1, 1, 1, 1, 1], # diagnosis 0, 1, 2, 3, 4
-        "dataset_ratio": [1, 1], # origin_train, diabetic
+        "dataset_ratio": [1], # origin_train, diabetic
     },
     "model": {
         "name": "resnet50",

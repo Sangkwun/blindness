@@ -4,7 +4,8 @@
         "width": 288,
         "height": 288,
         "transforms": [
-            "random_resized_crop"
+            "random_resized_crop",
+            "imagenet_poilcy"
         ],
         "test_transforms": [
             "random_resized_crop"

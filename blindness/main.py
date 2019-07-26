@@ -159,8 +159,6 @@ def validate(model, valid_data, cfg):
             image, target, _ = item
             batch_size = image.size(0)
             outputs, loss = model(image, target, validate=True)
-            if cfg['dataset']['method'] == 'h_classification_':
-                outputs = decode_label(outputs)
             all_losses.append(loss.detach().cpu().numpy())
             start_index = i*batch_size
             end_index = len(valid_data) if (i+1)*batch_size > len(valid_data) else (i+1)*batch_size
@@ -174,7 +172,7 @@ def validate(model, valid_data, cfg):
 
         valid_loss = sum([loss.item() for loss in all_losses])
         
-        if cfg['dataset']['method'] == 'h_classification_':
+        if cfg['dataset']['method'] == 'h_classification':
             valid_score = cohen_kappa_score(all_targets, all_predictions, weights='quadratic')
         else:
             valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
