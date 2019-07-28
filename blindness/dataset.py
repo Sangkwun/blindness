@@ -8,7 +8,7 @@ from sklearn.utils import resample
 
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from .configs import dataset_map, diabetic_retinopathy_map
-
+from .sampler import get_sampler
 
 class BlindDataset(Dataset):
     """
@@ -119,7 +119,7 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
                 df = df[df['large']]
             elif dataset_config['valid_with_small']:
                 df = df[~df['large']]
-
+    sampler_df = [df]
     dataset = BlindDataset(
         image_dir=image_dir,
         df=df,
@@ -128,6 +128,7 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
         is_test=is_test,
         num_tta=num_tta
     )
+
     if split == 'train' and dataset_config['use_diabetic_retinopathy']:
         diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'], index_col='Unnamed: 0')
         del diabetic_df['Unnamed: 0.1']
@@ -142,13 +143,28 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
 
         if not dataset_config['use_original']:
             dataset = diabetic_dataset
+            sampler_df = [diabetic_df]
         else:
+            sampler_df += [diabetic_df]
             dataset = ConcatDataset([dataset, diabetic_dataset])
+
+    if split == 'train' and \
+        (dataset_config['use_class_ratio'] or dataset_config['use_dataset_ratio']):
+        sampler = get_sampler(
+            dataset_config['use_class_ratio'],
+            dataset_config['use_dataset_ratio'],
+            dataset_config['class_ratio'],
+            dataset_config['dataset_ratio'],
+            sampler_df
+        )
+    else:
+        sampler = None
 
     data_loader = DataLoader(
         dataset,
-        shuffle=True,
+        shuffle=True if sampler is None else False,
         batch_size=batch_size,
         num_workers=num_workers,
+        sampler=sampler,
     )
     return data_loader
