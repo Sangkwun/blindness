@@ -63,16 +63,16 @@ def get_transforms(transforms_list,
             scale = (0.8, 1.2) if is_train else (1.0, 1.0)
             ratio = (1.0, 1.0) if is_train else (1.0, 1.0)
             transforms.append(
-                Resize(
-                    (width, height)
-                )
-            )
-        elif transform == 'resize':
-            transforms.append(
                 RandomResizedCrop(
                     (width, height),
                     scale=scale,
                     ratio=ratio,
+                )
+            )
+        elif transform == 'resize':
+            transforms.append(
+                Resize(
+                    (width, height)
                 )
             )
         elif transform == 'crop_black': # crop_black은 첫번째로 넣어줘야함.
