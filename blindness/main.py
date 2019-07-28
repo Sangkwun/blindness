@@ -159,8 +159,6 @@ def validate(model, valid_data, cfg):
             batch_size = image.size(0)
             outputs, loss = model(image, target, validate=True)
             all_losses.append(loss.detach().cpu().numpy())
-            start_index = i*batch_size
-            end_index = len(valid_data) if (i+1)*batch_size > len(valid_data) else (i+1)*batch_size
 
             all_losses.append(loss)
             all_predictions.append(outputs.cpu().numpy())
