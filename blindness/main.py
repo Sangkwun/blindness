@@ -53,7 +53,11 @@ def main():
     elif args.mode == 'valid':
         run_valid(cfg, args.model_path)
     elif args.mode == 'predict':
+<<<<<<< HEAD
         predict(cfg, args.model_path, args.num_tta)
+=======
+        predict(cfg, args.model_path, args.tta)
+>>>>>>> 4dea1a1852f1420ce3e9b5788e02adad4eec1ac8
     elif args.mode == 'submit':
         submit(args.predictions, args.output_path)
     else:
@@ -177,6 +181,7 @@ def validate(model, valid_data, cfg):
         all_targets = np.concatenate(all_targets)
 
         valid_loss = sum([loss.item() for loss in all_losses])/len(valid_data.dataset)
+<<<<<<< HEAD
 
         print(all_targets)
         print(all_predictions)
@@ -188,6 +193,9 @@ def validate(model, valid_data, cfg):
 
 
         valid_score = cohen_kappa_score(all_targets, all_predictions, weights='quadratic')
+=======
+        valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
+>>>>>>> 4dea1a1852f1420ce3e9b5788e02adad4eec1ac8
         print('Validation Loss: {:.4f}'.format(valid_loss))
         print('val_score: {:.4f}'.format(valid_score))
 

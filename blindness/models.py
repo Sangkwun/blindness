@@ -6,9 +6,16 @@ import torchvision.models as models
 from torch import nn
 from torch.nn import functional as F
 
+from .efficientnet_pytorch import EfficientNet
 
 model_map = {
-    "resnet50": models.resnet50
+    "resnet50": models.resnet50,
+    'efficientnet-b0': EfficientNet.from_name('efficientnet-b0'),
+    'efficientnet-b1': EfficientNet.from_name('efficientnet-b1'),
+    'efficientnet-b2': EfficientNet.from_name('efficientnet-b2'),
+    'efficientnet-b3': EfficientNet.from_name('efficientnet-b3'),
+    'efficientnet-b4': EfficientNet.from_name('efficientnet-b4'),
+    'efficientnet-b5': EfficientNet.from_name('efficientnet-b5')
 }
 
 class Model(nn.Module):
@@ -32,16 +39,28 @@ class Model(nn.Module):
             cfg['model']['pretrained'],
             cfg['dataset']['num_class']
         )
-        self.backbone = model_map[cfg['model']['name']](*args)
+        if cfg['model']['name'].split('-')[0] == 'efficientnet':
+            self.backbone = model_map[cfg['model']['name']]
+        else:
+            self.backbone = model_map[cfg['model']['name']](*args)
 
         if weights_path is not None:
             self.backbone.load_state_dict(torch.load(weights_path))
 
-        self.backbone.fc = nn.Sequential(
-            nn.Linear(in_features=2048, out_features=2048, bias=True),
-            nn.ReLU(),
-            nn.Linear(in_features=2048, out_features=out_feature, bias=True),
-        )
+        if cfg['model']['name'].split('-')[0] == 'efficientnet':
+            in_features = self.backbone._fc.in_features
+            self.backbone._fc = nn.Sequential(
+                nn.Linear(in_features=in_features, out_features=512, bias=True),
+                nn.BatchNorm1d(num_features=512),
+                nn.ReLU(),
+                nn.Linear(in_features=512, out_features=out_feature, bias=True),
+            )
+        else:
+            self.backbone.fc = nn.Sequential(
+                nn.Linear(in_features=2048, out_features=2048, bias=True),
+                nn.ReLU(),
+                nn.Linear(in_features=2048, out_features=out_feature, bias=True),
+            )
 
     def loss(self, pred, label):
         if self.mode == 'regression':

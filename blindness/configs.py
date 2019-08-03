@@ -32,8 +32,8 @@ if ON_KAGGLE:
 default_config = {
     'name': 'exp_{}'.format(datetime.now().replace(second=0, microsecond=0)),
         "input": {
-        "width": 224,
-        "height": 224,
+        "width": 288,
+        "height": 288,
         "transforms": [
             "random_resized_crop"
         ],
@@ -45,8 +45,8 @@ default_config = {
         "fold": 0,
         "num_class": 5,
         "batch_size": 32,
-        "num_workers": 4,
-        "method":"regression",
+        "num_workers": 2,
+        "method":"classification",
         "use_original": True,
         "use_diabetic_retinopathy": True,
         "valid_with_both": True,
