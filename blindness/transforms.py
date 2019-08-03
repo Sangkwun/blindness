@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 from PIL import Image
-from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply, Resize
+from torchvision.transforms import Compose, ToTensor, Normalize, RandomResizedCrop, RandomApply, Resize, CenterCrop
 from torchvision.transforms import RandomHorizontalFlip, RandomVerticalFlip, ColorJitter, RandomGrayscale
 
 from .autoaugment import ImageNetPolicy, CIFAR10Policy, SVHNPolicy
@@ -68,6 +68,17 @@ def get_transforms(transforms_list,
                     scale=scale,
                     ratio=ratio,
                 )
+                
+            )
+        elif transform == 'center_crop' :
+            transforms.append(
+                CenterCrop((700, 700))
+            )
+        elif transform == 'resize':
+            transforms.append(
+                Resize(
+                    (width, height)
+                )
             )
         elif transform == 'resize':
             transforms.append(
@@ -100,7 +111,7 @@ def get_transforms(transforms_list,
             p = 0.5 if is_train else 0.25
             transforms.append(RandomGrayscale(p))
         elif transform == 'ben_graham':
-            p = 0.5 if is_train else 0.25
+            p = 1 if is_train else 1
             transforms.append(BenGrahamAug(p))
         elif transform == 'imagenet_poilcy':
             transforms.append(ImageNetPolicy())
