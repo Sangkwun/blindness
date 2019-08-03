@@ -51,7 +51,7 @@ def main():
     elif args.mode == 'valid':
         run_valid(cfg, args.model_path)
     elif args.mode == 'predict':
-        predict(cfg, args.model_path, args.num_tta)
+        predict(cfg, args.model_path, args.tta)
     elif args.mode == 'submit':
         submit(args.predictions, args.output_path)
     else:
