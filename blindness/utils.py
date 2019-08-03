@@ -22,3 +22,20 @@ def save_checkpoint(model, path, epoch, best_valid_score, best_valid_loss, lr):
         "lr": lr
     }
     torch.save(data, path)
+
+
+def mse_decode(preds):
+    coef = [0.5, 1.5, 2.5, 3.5]
+
+    for i, pred in enumerate(preds):
+        if pred < coef[0]:
+            preds[i] = 0
+        elif pred >= coef[0] and pred < coef[1]:
+            preds[i] = 1
+        elif pred >= coef[1] and pred < coef[2]:
+            preds[i] = 2
+        elif pred >= coef[2] and pred < coef[3]:
+            preds[i] = 3
+        else:
+            preds[i] = 4
+    return preds

@@ -62,9 +62,9 @@ class Model(nn.Module):
             return loss
         elif validate:
             if self.mode == 'classification':
-                pred =  F.softmax(pred)
+                pred = F.softmax(pred)
             return pred, loss
-        else:
+        else:  
             if self.mode == 'classification':
                 pred =  F.softmax(pred)
             return pred

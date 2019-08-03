@@ -17,9 +17,11 @@ from .configs import dataset_map, get_cfg
 from .models import build_model
 from .transforms import build_transforms
 from .dataset import build_dataset
-from .utils import load_checkpoint, save_checkpoint, ON_KAGGLE
+from .utils import load_checkpoint, save_checkpoint, mse_decode, ON_KAGGLE
 from .optimizer import build_optimizer, build_scheduler
 
+import warnings
+warnings.filterwarnings('ignore')
 
 if not ON_KAGGLE:
     from torch.utils.tensorboard import SummaryWriter
@@ -67,7 +69,7 @@ def train(cfg):
 
     train_data = build_dataset(cfg, train_transform, split='train')
     valid_data = build_dataset(cfg, valid_transform, split='valid')
-    
+
     model = build_model(cfg, device)
 
     since = time.time()
@@ -77,6 +79,7 @@ def train(cfg):
     grad_clip = cfg['train_param']['grad_clip']
 
     output_dir = Path('output', cfg['name'])
+    # output_dir = Path('output')
     output_dir.mkdir(exist_ok=True, parents=True)
     model_path = output_dir / 'model.pt'
     best_model_path = output_dir / 'best_model.pt'
@@ -99,6 +102,7 @@ def train(cfg):
     scheduler = build_scheduler(cfg, optimizer)
 
     step = 0
+    best_epoch = 0
 
     for epoch in range(start_epoch, num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -107,7 +111,8 @@ def train(cfg):
         model.train()
         running_loss = 0.0
 
-        for image, target, _ in tqdm(train_data,  desc='Train'):            
+        for image, target, _ in tqdm(train_data,  desc='Train'):   
+
             loss = model(image, target)
             batch_size = image.size(0)
             (batch_size * loss).backward()
@@ -126,11 +131,12 @@ def train(cfg):
         print('Train Loss: {:.4f}'.format(epoch_loss))
     
         valid_loss, valid_score = validate(model, valid_data, cfg) # Validation
-        save_checkpoint(model, model_path, epoch, best_valid_score, best_valid_loss, lr) # Save checkpoint
         # Update best model, loss, score
         if valid_loss < best_valid_loss: best_valid_loss = valid_loss
         if valid_score > best_valid_score: 
-            best_valid_score = valid_score
+            best_valid_score = valid_score 
+            best_epoch = epoch
+            save_checkpoint(model, model_path, epoch, best_valid_score, best_valid_loss, lr) # Save checkpoint
             copyfile(model_path, best_model_path) # copy modelfile to best model
 
         # write to tensorboard
@@ -144,8 +150,11 @@ def train(cfg):
             writer.add_scalar('best_valid_loss', best_valid_loss, global_step=epoch)
         if scheduler is not None:
             scheduler.step()
+
+        print()
         
     time_elapsed = time.time() - since
+    print("best epoch {}  best valid score {}".format(best_epoch, round(best_valid_score, 4)))
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     return None
 
@@ -168,7 +177,17 @@ def validate(model, valid_data, cfg):
         all_targets = np.concatenate(all_targets)
 
         valid_loss = sum([loss.item() for loss in all_losses])/len(valid_data.dataset)
-        valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
+
+        print(all_targets)
+        print(all_predictions)
+        if cfg['dataset']['method'] == 'classification':
+            all_predictions = np.argmax(all_predictions, axis=1)
+        elif cfg["dataset"]["method"] == 'regression':
+            all_predictions = mse_decode(all_predictions)
+        print(all_predictions)
+
+
+        valid_score = cohen_kappa_score(all_targets, all_predictions, weights='quadratic')
         print('Validation Loss: {:.4f}'.format(valid_loss))
         print('val_score: {:.4f}'.format(valid_score))
 

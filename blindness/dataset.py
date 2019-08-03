@@ -132,7 +132,8 @@ def build_dataset(cfg, transforms,  split='train', num_tta=0):
     if split == 'train' and dataset_config['use_diabetic_retinopathy']:
         diabetic_df = pd.read_csv(diabetic_retinopathy_map['train'], index_col='Unnamed: 0')
         del diabetic_df['Unnamed: 0.1']
-        if use_upsampling: diabetic_df = upsampling(diabetic_df) # up sampling for diabetic
+        if use_upsampling: 
+            diabetic_df = upsampling(diabetic_df) # up sampling for diabetic
         diabetic_dataset = BlindDataset(
             image_dir=diabetic_retinopathy_map['train_images'],
             df=diabetic_df,

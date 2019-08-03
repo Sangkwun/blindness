@@ -11,7 +11,7 @@ data_path = '../input/aptos2019-blindness-detection'
 dataset_map = {
     "train": os.path.join(data_path, 'train.csv'),
     "test": os.path.join(data_path, 'test.csv'),
-    "fold": 'folds.csv',
+    "fold": '../input/blind-fold/folds.csv',
     "train_images": os.path.join(data_path, 'train_images'),
     "test_images": os.path.join(data_path, 'test_images'),
     "submission": os.path.join(data_path, 'sample_submission.csv')
@@ -32,8 +32,8 @@ if ON_KAGGLE:
 default_config = {
     'name': 'exp_{}'.format(datetime.now().replace(second=0, microsecond=0)),
         "input": {
-        "width": 288,
-        "height": 288,
+        "width": 224,
+        "height": 224,
         "transforms": [
             "random_resized_crop"
         ],
@@ -45,8 +45,8 @@ default_config = {
         "fold": 0,
         "num_class": 5,
         "batch_size": 32,
-        "num_workers": 2,
-        "method":"classification",
+        "num_workers": 4,
+        "method":"regression",
         "use_original": True,
         "use_diabetic_retinopathy": True,
         "valid_with_both": True,
@@ -62,10 +62,12 @@ default_config = {
         "name": "resnet50",
         "pretrained": False,
         "weight_path": "../input/resnet50/resnet50.pth"
+        # "weight_path": "../input/blind-pretrained-resnet50/predata_l3l4fc_cv8544.pt"
     },
     "train_param": {
-        "epoch": 20,
+        "epoch": 10,
         "lr": 0.0001,
+        "optimizer": "Adam",
         "grad_clip_step": 20,
         "grad_clip": 100.0,
         "scheduler": "cosine",

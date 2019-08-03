@@ -3,7 +3,11 @@ from torch import optim
 from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 
 def build_optimizer(cfg, model, lr):
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer_config = cfg['train_param']['optimizer']
+    if optimizer_config == "Adam":    
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+    elif optimizer_config == "SGD":
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.025)
     return optimizer
 
 def build_scheduler(cfg, optimizer):
