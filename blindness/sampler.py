@@ -38,7 +38,7 @@ class RatioSampler(Sampler):
             dataset_ratio = np.array(dataset_ratio)
             self.dataset_ratio = dataset_ratio/sum(dataset_ratio)
         else:
-            self.dataset_ratio = [1]
+            self.dataset_ratio = np.array([1])
 
     def __iter__(self):
         return iter(self._fixed_ratio_indices())

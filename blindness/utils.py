@@ -1,4 +1,6 @@
 import os
+import random
+import numpy as np
 import torch
 
 ON_KAGGLE = 'KAGGLE_WORKING_DIR' in os.environ
@@ -24,18 +26,10 @@ def save_checkpoint(model, path, epoch, best_valid_score, best_valid_loss, lr):
     torch.save(data, path)
 
 
-def mse_decode(preds):
-    coef = [0.5, 1.5, 2.5, 3.5]
-
-    for i, pred in enumerate(preds):
-        if pred < coef[0]:
-            preds[i] = 0
-        elif pred >= coef[0] and pred < coef[1]:
-            preds[i] = 1
-        elif pred >= coef[1] and pred < coef[2]:
-            preds[i] = 2
-        elif pred >= coef[2] and pred < coef[3]:
-            preds[i] = 3
-        else:
-            preds[i] = 4
-    return preds
+def seed_everything(seed):
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True

@@ -25,3 +25,5 @@ run('python -m blindness.main train --config_path "./blindness/configs/base.json
 # run('python -m blindness.main valid --config_path blindness/configs/base_small_large.json')
 # run('python -m blindness.main predict --config_path blindness/configs/base.json --model_path ../input/baseline/best_model.pt')
 # run('python -m blindness.main submit --predictions output/base_test/prediction.pt')
+
+# crop black test

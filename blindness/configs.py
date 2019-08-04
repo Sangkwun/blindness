@@ -46,7 +46,7 @@ default_config = {
         "num_class": 5,
         "batch_size": 32,
         "num_workers": 2,
-        "method":"classification",
+        "method":"regression",
         "use_original": True,
         "use_diabetic_retinopathy": True,
         "valid_with_both": True,
@@ -65,7 +65,7 @@ default_config = {
         # "weight_path": "../input/blind-pretrained-resnet50/predata_l3l4fc_cv8544.pt"
     },
     "train_param": {
-        "epoch": 10,
+        "epoch": 20,
         "lr": 0.0001,
         "optimizer": "Adam",
         "grad_clip_step": 20,

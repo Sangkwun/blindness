@@ -17,7 +17,7 @@ from .configs import dataset_map, get_cfg
 from .models import build_model
 from .transforms import build_transforms
 from .dataset import build_dataset
-from .utils import load_checkpoint, save_checkpoint, mse_decode, ON_KAGGLE
+from .utils import load_checkpoint, save_checkpoint, seed_everything, ON_KAGGLE
 from .optimizer import build_optimizer, build_scheduler
 
 import warnings
@@ -43,7 +43,10 @@ def arg_parser():
 
 def main():
     args = arg_parser()
-    
+
+    SEED = 2019
+    seed_everything(SEED)
+
     cfg = get_cfg(args.config_path)
     if args.name is not None:
         cfg['name'] = args.name
@@ -53,11 +56,7 @@ def main():
     elif args.mode == 'valid':
         run_valid(cfg, args.model_path)
     elif args.mode == 'predict':
-<<<<<<< HEAD
-        predict(cfg, args.model_path, args.num_tta)
-=======
         predict(cfg, args.model_path, args.tta)
->>>>>>> 4dea1a1852f1420ce3e9b5788e02adad4eec1ac8
     elif args.mode == 'submit':
         submit(args.predictions, args.output_path)
     else:
@@ -129,7 +128,6 @@ def train(cfg):
 
             running_loss += loss.item()
 
-
         epoch_loss = running_loss / len(train_data.dataset)
         loss_list.append(epoch_loss)
         print('Train Loss: {:.4f}'.format(epoch_loss))
@@ -181,25 +179,25 @@ def validate(model, valid_data, cfg):
         all_targets = np.concatenate(all_targets)
 
         valid_loss = sum([loss.item() for loss in all_losses])/len(valid_data.dataset)
-<<<<<<< HEAD
 
-        print(all_targets)
-        print(all_predictions)
-        if cfg['dataset']['method'] == 'classification':
+        if model.mode == "classification":
             all_predictions = np.argmax(all_predictions, axis=1)
-        elif cfg["dataset"]["method"] == 'regression':
-            all_predictions = mse_decode(all_predictions)
-        print(all_predictions)
-
-
+        elif model.mode == "regression":
+            all_predictions = all_predictions.squeeze()
+            all_predictions[all_predictions<0.5]= 0
+            all_predictions[(0.5<=all_predictions) & (all_predictions<1.5)] = 1
+            all_predictions[(1.5<=all_predictions) & (all_predictions<2.5)] = 2
+            all_predictions[(2.5<=all_predictions) & (all_predictions<3.5)] = 3
+            all_predictions[3.5<=all_predictions] = 4
+        else:
+            raise NotImplementedError
+        # all_targets (10,), all_predictions(10,)
         valid_score = cohen_kappa_score(all_targets, all_predictions, weights='quadratic')
-=======
-        valid_score = cohen_kappa_score(all_targets, np.argmax(all_predictions, axis=1), weights='quadratic')
->>>>>>> 4dea1a1852f1420ce3e9b5788e02adad4eec1ac8
         print('Validation Loss: {:.4f}'.format(valid_loss))
         print('val_score: {:.4f}'.format(valid_score))
 
     return valid_loss, valid_score
+
 
 def run_valid(cfg, model_path):
     if cuda.is_available():

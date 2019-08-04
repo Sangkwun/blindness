@@ -1,13 +1,13 @@
 {
     "name": "base_test",
     "input": {
-        "width": 224,
-        "height": 224,
+        "width": 256,
+        "height": 256,
         "transforms": [
-            "random_resized_crop"
+            "crop_black", "random_resized_crop"
         ],
         "test_transforms": [
-            "random_resized_crop"
+            "crop_black", "random_resized_crop"
         ]
     },
     "dataset": {
@@ -15,7 +15,7 @@
         "num_class": 5,
         "batch_size": 32,
         "num_workers": 4,
-        "method":"regression",
+        "method":"classification",
         "use_original": true,
         "use_diabetic_retinopathy": true,
         "valid_with_both": true,
@@ -29,7 +29,7 @@
         "weight_path": "../input/resnet50/resnet50.pth"
     },
     "train_param": {
-        "epoch": 10,
+        "epoch": 20,
         "optimizer": "Adam",
         "lr": 0.0001,
         "grad_clip_step": 20,
