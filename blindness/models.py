@@ -64,7 +64,8 @@ class Model(nn.Module):
 
     def loss(self, pred, label):
         if self.mode == 'regression':
-            label = label.float()
+            label = label.float().unsqueeze(0).transpose(0,1)
+            
         loss = self.criterion(pred, label)
         return loss
 
