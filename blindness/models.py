@@ -9,7 +9,6 @@ from torch.nn import functional as F
 from .efficientnet_pytorch import EfficientNet
 
 model_map = {
-    "resnext": torch.hub.load('facebookresearch/WSL-Images', 'resnext101_32x16d_wsl'),
     "resnet50": models.resnet50,
     'efficientnet-b0': EfficientNet.from_name('efficientnet-b0'),
     'efficientnet-b1': EfficientNet.from_name('efficientnet-b1'),
@@ -43,9 +42,11 @@ class Model(nn.Module):
         if cfg['model']['name'].split('-')[0] == 'efficientnet':
             self.backbone = model_map[cfg['model']['name']]
         elif cfg['model']['name'] == 'resnext':
-            self.backbone = model_map[cfg['model']['name']]
+            self.backbone = torch.hub.load('facebookresearch/WSL-Images', 'resnext101_32x16d_wsl')
         elif cfg['model']['name'] == 'resnet50':
             self.backbone = model_map[cfg['model']['name']](*args)
+        else:
+            raise NotImplementedError
         
         if weights_path is not None and cfg['model']['name'] == 'resnet50':
             self.backbone.load_state_dict(torch.load(weights_path))

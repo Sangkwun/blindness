@@ -13,7 +13,7 @@
     "dataset": {
         "fold": 0,
         "num_class": 5,
-        "batch_size": 16,
+        "batch_size": 32,
         "num_workers": 4,
         "method":"regression",
         "use_original": true,
@@ -24,7 +24,7 @@
         "upsampling": false
     },
     "model": {
-        "name": "resnext",
+        "name": "resnet50",
         "pretrained": false,
         "weight_path": "../input/resnet50/resnet50.pth"
     },

@@ -62,7 +62,6 @@ default_config = {
         "name": "resnet50",
         "pretrained": False,
         "weight_path": "../input/resnet50/resnet50.pth"
-        # "weight_path": "../input/blind-pretrained-resnet50/predata_l3l4fc_cv8544.pt"
     },
     "train_param": {
         "epoch": 30,
