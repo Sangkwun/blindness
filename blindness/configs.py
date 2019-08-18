@@ -56,7 +56,7 @@ default_config = {
         "use_class_ratio": True,
         "use_dataset_ratio": True,
         "class_ratio": [1, 1, 1, 1, 1], # diagnosis 0, 1, 2, 3, 4
-        "dataset_ratio": [1, 1], # origin_train, diabetic
+        "dataset_ratio": [1, 4], # origin_train, diabetic
     },
     "model": {
         "name": "resnet50",
@@ -65,7 +65,7 @@ default_config = {
         # "weight_path": "../input/blind-pretrained-resnet50/predata_l3l4fc_cv8544.pt"
     },
     "train_param": {
-        "epoch": 20,
+        "epoch": 30,
         "lr": 0.0001,
         "optimizer": "Adam",
         "grad_clip_step": 20,

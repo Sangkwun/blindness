@@ -78,6 +78,8 @@ def train(cfg):
     since = time.time()
     lr = cfg['train_param']['lr']
     num_epochs = cfg['train_param']['epoch']
+    batch_accumulation = cfg['train_param']['batch_accumulation']
+    accumulation_step = cfg['train_param']['accumulation_step']
     grad_clip_step = cfg['train_param']['grad_clip_step']
     grad_clip = cfg['train_param']['grad_clip']
 
@@ -112,17 +114,25 @@ def train(cfg):
         print('-' * 10)
 
         model.train()
+        optimizer.zero_grad()
         running_loss = 0.0
 
-        for image, target, _ in tqdm(train_data,  desc='Train'):   
+        for batch_idx, (image, target, _) in enumerate(train_data):
+        # for image, target, _ in tqdm(train_data,  desc='Train'):   
 
             loss = model(image, target)
             batch_size = image.size(0)
             (batch_size * loss).backward()
             if step > grad_clip_step:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-            optimizer.step()
-            optimizer.zero_grad()
+
+            if batch_accumulation:
+                if (batch_idx+1) % accumulation_step == 0:        
+                    optimizer.step()
+                    optimizer.zero_grad()
+            else:
+                optimizer.step()
+                optimizer.zero_grad()
 
             step += 1
 
@@ -165,7 +175,8 @@ def validate(model, valid_data, cfg):
     all_losses, all_predictions, all_targets = [], [], []
 
     with torch.no_grad():
-        for i, item in tqdm(enumerate(valid_data), desc='Valid'):
+        for i, item in enumerate(valid_data):
+        # for i, item in tqdm(enumerate(valid_data), desc='Valid'):
             image, target, _ = item
             batch_size = image.size(0)
             outputs, loss = model(image, target, validate=True)
@@ -260,10 +271,12 @@ def predict(cfg, model_path, num_tta):
     df = pd.DataFrame(
         data=np.concatenate(all_outputs),
         index=all_ids,
-        columns=map(str, range(num_class)))
+        # columns=map(str, range(num_class)))
+        columns=['diagnosis'])
     df = df.groupby(level=0).mean()
     df.to_hdf(pred_path, 'prob', index_label='id_code')
     print('Saved predictions to {}'.format(pred_path))
+
 
 def submit(predictions, output):
     sample_submission = pd.read_csv(
@@ -277,11 +290,24 @@ def submit(predictions, output):
         dfs.append(df)
     df = pd.concat(dfs)
     df = df.groupby(level=0).mean() # get mean of predictions
-    df = df.apply(get_classes, axis=1)
+    df = df['diagnosis'].map(lambda x: get_classes_reg(x))
+    # df = df.apply(get_classes, axis=1)
+
     df.name = 'diagnosis'
     df.to_csv(output, header=True)
 
-
+def get_classes_reg(item):
+    if item < 0.5:
+        return 0
+    elif (item >= 0.5) & (item < 1.5):
+        return 1
+    elif (item >= 1.5) & (item < 2.5):
+        return 2
+    elif (item >= 2.5) & (item < 3.5):
+        return 3
+    else:
+        return 4
+    
 def get_classes(item):
     return item.idxmax()
 

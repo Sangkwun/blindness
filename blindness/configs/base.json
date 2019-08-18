@@ -4,18 +4,18 @@
         "width": 256,
         "height": 256,
         "transforms": [
-            "crop_black", "random_resized_crop"
+            "crop_black", "random_resized_crop", "random_horizontal_flip", "random_vertical_flip", "random_rotate" 
         ],
         "test_transforms": [
-            "crop_black", "random_resized_crop"
+            "crop_black", "random_resized_crop", "random_horizontal_flip"
         ]
     },
     "dataset": {
         "fold": 0,
         "num_class": 5,
-        "batch_size": 32,
+        "batch_size": 16,
         "num_workers": 4,
-        "method":"classification",
+        "method":"regression",
         "use_original": true,
         "use_diabetic_retinopathy": true,
         "valid_with_both": true,
@@ -24,7 +24,7 @@
         "upsampling": false
     },
     "model": {
-        "name": "resnet50",
+        "name": "resnext",
         "pretrained": false,
         "weight_path": "../input/resnet50/resnet50.pth"
     },
@@ -32,6 +32,8 @@
         "epoch": 20,
         "optimizer": "Adam",
         "lr": 0.0001,
+        "batch_accumulation": true,
+        "accumulation_step": 4,
         "grad_clip_step": 20,
         "grad_clip": 100.0,
         "scheduler": "cosine",

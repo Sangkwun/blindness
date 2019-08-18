@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from .efficientnet_pytorch import EfficientNet
 
 model_map = {
+    "resnext": torch.hub.load('facebookresearch/WSL-Images', 'resnext101_32x16d_wsl'),
     "resnet50": models.resnet50,
     'efficientnet-b0': EfficientNet.from_name('efficientnet-b0'),
     'efficientnet-b1': EfficientNet.from_name('efficientnet-b1'),
@@ -30,7 +31,7 @@ class Model(nn.Module):
             out_feature=cfg['dataset']['num_class']
             self.criterion = nn.CrossEntropyLoss()
         elif self.mode == 'regression':
-            out_feature=1
+            out_feature = 1
             self.criterion = nn.MSELoss()
         else: 
             raise ValueError
@@ -41,10 +42,12 @@ class Model(nn.Module):
         )
         if cfg['model']['name'].split('-')[0] == 'efficientnet':
             self.backbone = model_map[cfg['model']['name']]
-        else:
+        elif cfg['model']['name'] == 'resnext':
+            self.backbone = model_map[cfg['model']['name']]
+        elif cfg['model']['name'] == 'resnet50':
             self.backbone = model_map[cfg['model']['name']](*args)
-
-        if weights_path is not None:
+        
+        if weights_path is not None and cfg['model']['name'] == 'resnet50':
             self.backbone.load_state_dict(torch.load(weights_path))
 
         if cfg['model']['name'].split('-')[0] == 'efficientnet':
@@ -55,12 +58,14 @@ class Model(nn.Module):
                 nn.ReLU(),
                 nn.Linear(in_features=512, out_features=out_feature, bias=True),
             )
-        else:
+        elif cfg['model']['name'] == 'resnet50':
             self.backbone.fc = nn.Sequential(
                 nn.Linear(in_features=2048, out_features=2048, bias=True),
                 nn.ReLU(),
                 nn.Linear(in_features=2048, out_features=out_feature, bias=True),
             )
+        elif cfg['model']['name'] == 'resnext':
+            self.backbone.fc = nn.Linear(2048, out_features=out_feature)
 
     def loss(self, pred, label):
         if self.mode == 'regression':
